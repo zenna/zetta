@@ -14,7 +14,7 @@ var probeServer = function(serverUrl) {
         'latency' : null
     };
     $.ajax({
-        url : serverUrl,
+        url : serverUrl + "/probe",
         context : document.body,
         success : function() {
             $(this).addClass("done");
@@ -183,7 +183,7 @@ this.probeSerers = function(localServers) {
 this.shouldResume = function() {
     var self = this;
     var request = $.ajax({
-        url : "zetta.org/getInstructions?",
+        url : "zetta.org/getOrders?",
         type : "POST",
         dataType : "json"
     });

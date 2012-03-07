@@ -11,3 +11,11 @@ def home(request):
         Take filter / order by restraints from POST
     """
     return render_to_response('simulation.html')
+
+def probe(request):
+    return 
+
+def get_orders(request):
+    """ Tell worker what to do """
+    response_data['action'] = 'probe'
+    return HttpResponse(json.dumps(response_data), mimetype="application/json")
