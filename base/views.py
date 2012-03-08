@@ -7,10 +7,26 @@ from cors import *
 def probe(request):
     return 
 
+def process_response(self, response):
+    if response.has_header('Access-Control-Allow-Origin'):
+            return response
+               
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
 def get_orders(request):
     """ Tell worker what to do """
-    response_data = {}
-    response_data['action'] = 'probe'
-    xs = XsSharing()
-    response = xs.process_response(HttpResponse(json.dumps(response_data), mimetype="application/json"))
-    return response
+    data = {}
+    data['action'] = 'proby'
+    if request.method == "POST":
+        response = HttpResponse(simplejson.dumps(data), mimetype='application/json')
+        response['Access-Control-Allow-Origin'] = "*"
+        return response
+    elif request.method == "OPTIONS":
+        response = HttpResponse("")
+        response['Access-Control-Allow-Origin'] = "*"
+        response['Access-Control-Allow-Methods'] = "POST, OPTIONS"
+        response['Access-Control-Allow-Headers'] = "X-Requested-With"
+        response['Access-Control-Max-Age'] = "180"
+    else:
+        return HttpResponseBadRequest()
