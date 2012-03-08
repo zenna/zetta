@@ -12,5 +12,5 @@ def get_orders(request):
     response_data = {}
     response_data['action'] = 'probe'
     xs = XsSharing()
-    response = xs.process_response(json.dumps(response_data), mimetype="application/json")
-    return HttpResponse(response)
+    response = xs.process_response(json.dumps(response_data))
+    return HttpResponse(response, mimetype="application/json")
