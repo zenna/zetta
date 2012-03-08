@@ -222,7 +222,7 @@ var User = function(parentHostname) {
     this.shouldResume = function() {
         var self = this;
         var request = $.ajax({
-            url : "http://ec2xman-23-20-27-108.compute-1.amazonaws.com/get_orders",
+            url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
             type : "POST",
             dataType : "text",
             crossDomain : true
