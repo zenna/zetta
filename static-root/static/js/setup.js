@@ -1,3 +1,40 @@
+jQuery(document).ajaxSend(function(event, xhr, settings) {
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    function sameOrigin(url) {
+        // url could be relative or scheme relative or absolute
+        var host = document.location.host; // host + port
+        var protocol = document.location.protocol;
+        var sr_origin = '//' + host;
+        var origin = protocol + sr_origin;
+        // Allow absolute or scheme relative URLs to same origin
+        return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+            (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+            // or any other URL that isn't scheme relative or absolute i.e relative.
+            !(/^(\/\/|http:|https:).*/.test(url));
+    }
+    function safeMethod(method) {
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+    }
+});
+
 // Determines whether the browser is supports requirements
 var isBrowserCapable = function(requirements) {
     if('localStorage' in requirements) {
@@ -185,7 +222,7 @@ var User = function(parentHostname) {
     this.shouldResume = function() {
         var self = this;
         var request = $.ajax({
-            url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
+            url : "http://ec2xman-23-20-27-108.compute-1.amazonaws.com/get_orders",
             type : "POST",
             dataType : "text",
             crossDomain : true
@@ -252,57 +289,4 @@ $('document').ready(function() {
     }
     var user = new User(parentHostname);
     user.init();
-    function createCORSRequest(method, url) {
-        var xhr = new XMLHttpRequest();
-        if("withCredentials" in xhr) {
-            // XHR for Chrome/Safari/Firefox.
-            xhr.open(method, url, true);
-        }
-        else if( typeof XDomainRequest != "undefined") {
-            // XDomainRequest for IE.
-            xhr = new XDomainRequest();
-            xhr.open(method, url);
-        }
-        else {
-            // CORS not supported.
-            xhr = null;
-        }
-        return xhr;
-    }
-
-    // Helper method to parse the title tag from the response.
-    function getTitle(text) {
-        return text.match('<title>(.*)?</title>')[1];
-    }
-
-    // Make the actual CORS request.
-    function makeCorsRequest() {
-        // bibliographica.org supports CORS.
-        var url = 'http://buzzword.org.uk/colours/';
-
-        var xhr = createCORSRequest('GET', url);
-        if(!xhr) {
-            alert('CORS not supported');
-            return;
-        }
-
-        // Response handlers.
-        xhr.onload = function() {
-            var text = xhr.responseText;
-            var title = getTitle(text);
-            alert('Response from CORS request to ' + url + ': ' + title);
-        };
-
-
-      
-
-        xhr.send();
-    }
-    
-    // makeCorsRequest();
-
 });
-// Accept:text/plain, */*; q=0.01
-// Origin:http://localhost:8080
-// Referer:http://localhost:8080/static/js/test-zetta.html
-// User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.66 Safari/535.11
