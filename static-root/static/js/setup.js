@@ -94,7 +94,8 @@ var User = function(parentHostname) {
     this.updateWindowData = function(self, recurse) {
         var betweenUpdatesMs = 1000;
         var maxPerturbMs = 1000;
-        var windowId = self.currentWindowStatus.windowId; (function() {
+        var windowId = self.currentWindowStatus.windowId;
+        (function() {
             var windowDataString = localStorage.getItem('windowData');
             var windowData = windowDataString === null ? {} : JSON.parse(windowDataString);
             self.currentWindowStatus.time = (new Date()).getTime();
@@ -184,7 +185,7 @@ var User = function(parentHostname) {
     this.shouldResume = function() {
         var self = this;
         var request = $.ajax({
-            url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
+            url : "http://buzzword.org.uk/colours/",
             type : "POST",
             dataType : "text",
             crossDomain : true
@@ -192,6 +193,7 @@ var User = function(parentHostname) {
 
         request.success(function(data, textStatus, jqXHR) {
             // TODO: Validate data
+            console.log("success");
             self.job = new Job(data['code']);
             if(data.action === 'resume') {
                 self.job.resume();
@@ -251,4 +253,57 @@ $('document').ready(function() {
     }
     var user = new User(parentHostname);
     user.init();
+    function createCORSRequest(method, url) {
+        var xhr = new XMLHttpRequest();
+        if("withCredentials" in xhr) {
+            // XHR for Chrome/Safari/Firefox.
+            xhr.open(method, url, true);
+        }
+        else if( typeof XDomainRequest != "undefined") {
+            // XDomainRequest for IE.
+            xhr = new XDomainRequest();
+            xhr.open(method, url);
+        }
+        else {
+            // CORS not supported.
+            xhr = null;
+        }
+        return xhr;
+    }
+
+    // Helper method to parse the title tag from the response.
+    function getTitle(text) {
+        return text.match('<title>(.*)?</title>')[1];
+    }
+
+    // Make the actual CORS request.
+    function makeCorsRequest() {
+        // bibliographica.org supports CORS.
+        var url = 'http://buzzword.org.uk/colours/';
+
+        var xhr = createCORSRequest('GET', url);
+        if(!xhr) {
+            alert('CORS not supported');
+            return;
+        }
+
+        // Response handlers.
+        xhr.onload = function() {
+            var text = xhr.responseText;
+            var title = getTitle(text);
+            alert('Response from CORS request to ' + url + ': ' + title);
+        };
+
+
+      
+
+        xhr.send();
+    }
+    
+    // makeCorsRequest();
+
 });
+// Accept:text/plain, */*; q=0.01
+// Origin:http://localhost:8080
+// Referer:http://localhost:8080/static/js/test-zetta.html
+// User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.66 Safari/535.11
