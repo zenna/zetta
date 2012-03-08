@@ -2,6 +2,7 @@ from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
 from django.http import HttpResponse
 import simplejson as json
+from cors import *
 
 def probe(request):
     return 
@@ -10,4 +11,6 @@ def get_orders(request):
     """ Tell worker what to do """
     response_data = {}
     response_data['action'] = 'probe'
-    return HttpResponse(json.dumps(response_data), mimetype="application/json")
+    xs = XsSharing()
+    response = xs.process_resposne(json.dumps(response_data), mimetype="application/json")
+    return HttpResponse(response)

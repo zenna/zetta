@@ -94,14 +94,12 @@ var User = function(parentHostname) {
     this.updateWindowData = function(self, recurse) {
         var betweenUpdatesMs = 1000;
         var maxPerturbMs = 1000;
-        var windowId = self.currentWindowStatus.windowId;
-        (function() {
+        var windowId = self.currentWindowStatus.windowId; (function() {
             var windowDataString = localStorage.getItem('windowData');
             var windowData = windowDataString === null ? {} : JSON.parse(windowDataString);
             self.currentWindowStatus.time = (new Date()).getTime();
-
             var cleanupTestHash = self.cleanupTestWindowData(windowData, betweenUpdatesMs + maxPerturbMs + 100);
-            var anyWindowsWorking = cleanupTestHash.anyWindowsWorking
+            var anyWindowsWorking = cleanupTestHash.anyWindowsWorking || self.currentWindowStatus.state === 'working' ? true : false;
             var cleanWindowData = cleanupTestHash.cleanWindowData;
             cleanWindowData[windowId] = self.currentWindowStatus;
 
@@ -141,7 +139,7 @@ var User = function(parentHostname) {
         console.log();
         this.currentWindowStatus.state = 'idle';
     }
-    
+
     // Find bandwidth and latency values to a localServer
     var probeServer = function(serverUrl, success, failure, numTests) {
         var results = {};
@@ -169,62 +167,67 @@ var User = function(parentHostname) {
                     probeServerInner(serverUrl, successCallback, failureCallback, numTests - 1);
                 }
             }
+
         });
     };
-}
 
-this.probeSerers = function(localServers) {
-    var serverStats = {};
-    for(var i = 0; i < localServers.length; ++i) {
-        serverStats[localServers[i]] = probeServer(localServers[i]);
+
+    this.probeSerers = function(localServers) {
+        console.log("Starting probe");
+        var serverStats = {};
+        for(var i = 0; i < localServers.length; ++i) {
+            serverStats[localServers[i]] = probeServer(localServers[i]);
+        }
     }
-}
 
-this.shouldResume = function() {
-    var self = this;
-    var request = $.ajax({
-        url : "zetta.org/getOrders?",
-        type : "POST",
-        dataType : "json"
-    });
 
-    request.success(function(data, textStatus, jqXHR) {
-        // TODO: Validate data
-        self.job = new Job(data['code']);
-        if(data.action === 'resume') {
-            self.job.resume();
-        }
-        else if(data.action === 'probe') {
-            this.removeItem("workspace");
-            this.probeServers(data.localServers);
-        }
-        else if(data.action === 'start') {
-            this.removeItem("workspace");
-            self.job.start();
-        }
-        else {
-            throw new Error("Action not recognised");
-        }
-    });
+    this.shouldResume = function() {
+        var self = this;
+        var request = $.ajax({
+            url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
+            type : "POST",
+            dataType : "json",
+            crossDomain : true
+        });
 
-    // TODO: Handle failure
-}
+        request.success(function(data, textStatus, jqXHR) {
+            // TODO: Validate data
+            self.job = new Job(data['code']);
+            if(data.action === 'resume') {
+                self.job.resume();
+            }
+            else if(data.action === 'probe') {
+                this.removeItem("workspace");
+                this.probeServers(data.localServers);
+            }
+            else if(data.action === 'start') {
+                this.removeItem("workspace");
+                self.job.start();
+            }
+            else {
+                throw new Error("Action not recognised");
+            }
+        });
 
-this.init = function() {
-    var requirements = {
-        localStorage : true
-    };
-    if(isBrowserCapable(requirements)) {
-        var windowId = (new Date).getTime() + "-" + generateGuid();
-        this.currentWindowStatus = {
-            parentHostname : parentHostname,
-            time : (new Date()).getTime(),
-            state : 'idle',
-            windowId : windowId
+        // TODO: Handle failure
+    }
+
+
+    this.init = function() {
+        var requirements = {
+            localStorage : true
         };
-        this.updateWindowData(this, true);
-    }
-};
+        if(isBrowserCapable(requirements)) {
+            var windowId = (new Date).getTime() + "-" + generateGuid();
+            this.currentWindowStatus = {
+                parentHostname : parentHostname,
+                time : (new Date()).getTime(),
+                state : 'idle',
+                windowId : windowId
+            };
+            this.updateWindowData(this, true);
+        }
+    };
 
 }
 
@@ -232,7 +235,7 @@ this.init = function() {
 // parentHotname
 // Some commands to interact with tab, e.g. pause
 var parseUrl = function() {
-    return jQuery.param.fragment();
+    return jQuery.deparam.fragment();
 }
 
 
