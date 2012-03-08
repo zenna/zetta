@@ -18,6 +18,9 @@ def get_orders(request):
     """ Tell worker what to do """
     data = 'proby'
     response = HttpResponse(data, mimetype='text/plain')
+    response['Access-Control-Allow-Methods'] = "POST, OPTIONS"
+    response['Access-Control-Allow-Headers'] = "X-Requested-With"
+    response['Access-Control-Max-Age'] = "180"
     response['Access-Control-Allow-Origin'] = "*"
     return response
 #    elif request.method == "OPTIONS":

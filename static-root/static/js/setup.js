@@ -185,7 +185,7 @@ var User = function(parentHostname) {
     this.shouldResume = function() {
         var self = this;
         var request = $.ajax({
-            url : "http://buzzword.org.uk/colours/",
+            url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
             type : "POST",
             dataType : "text",
             crossDomain : true
@@ -193,7 +193,6 @@ var User = function(parentHostname) {
 
         request.success(function(data, textStatus, jqXHR) {
             // TODO: Validate data
-            console.log("success");
             self.job = new Job(data['code']);
             if(data.action === 'resume') {
                 self.job.resume();
