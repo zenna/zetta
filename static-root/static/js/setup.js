@@ -186,7 +186,7 @@ var User = function(parentHostname) {
         var request = $.ajax({
             url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
             type : "POST",
-            dataType : "json",
+            dataType : "text",
             crossDomain : true
         });
 

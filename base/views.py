@@ -16,10 +16,9 @@ def process_response(self, response):
 
 def get_orders(request):
     """ Tell worker what to do """
-    data = {}
-    data['action'] = 'proby'
+    data = 'proby'
     if request.method == "POST":
-        response = HttpResponse(simplejson.dumps(data), mimetype='application/json')
+        response = HttpResponse(simplejson.dumps(data), mimetype='text/plain')
         response['Access-Control-Allow-Origin'] = "*"
         return response
     elif request.method == "OPTIONS":
