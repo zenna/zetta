@@ -16,7 +16,7 @@ var Job = function(workerCode) {
     
     // Resume computation with no data in memory
     // But with data stored on disk in local storage
-    this.resume() = function() {
+    this.resume = function() {
         
     }
     

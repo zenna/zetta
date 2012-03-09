@@ -187,14 +187,15 @@ var User = function(parentHostname) {
         var request = $.ajax({
             url : "http://ec2-23-20-27-108.compute-1.amazonaws.com/get_orders",
             type : "POST",
-            dataType : "text",
+            dataType : "application/json",
             crossDomain : true
         });
 
         request.success(function(data, textStatus, jqXHR) {
             // TODO: Validate data
-            self.job = new Job(data['code']);
+            self.job = new Job();
             if(data.action === 'resume') {
+                self.job.code = data.code;
                 self.job.resume();
             }
             else if(data.action === 'probe') {
@@ -202,6 +203,7 @@ var User = function(parentHostname) {
                 this.probeServers(data.localServers);
             }
             else if(data.action === 'start') {
+                self.job.code = data.code;
                 this.removeItem("workspace");
                 self.job.start();
             }
