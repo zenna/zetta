@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+        Remove this if you use the .htaccess -->
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <title>infon_test</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Zenna Tavares" />
+        <meta name="viewport" content="width=device-width; initial-scale=1.0" />
+        <!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <br />
+        <script type='text/javascript' src="../include/jquery-1.7.1.min.js"></script>
+        <script type='text/javascript' src="d3.v2.js"></script>
+        <script type='text/javascript' src="infon.js"></script>
+        <style type="text/css">
+            .chart div {
+                font: 10px sans      - serif;
+                background-color: steelblue;
+                text-align: right;
+                padding: 3px;
+                margin: 1px;
+                color: white;
+            }
+            rect {
+                fill: #fff;
+            }
+            .node {
+                fill: #000;
+            }
+            .cursor {
+                fill: none;
+                stroke: brown;
+                pointer-events: none;
+            }
+            .link {
+                stroke: #999;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id="viz"></div>
+        <div id="chart"></div>
+        <span id="data"></span>
+    </body>
+</html>

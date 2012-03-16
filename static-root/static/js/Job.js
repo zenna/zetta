@@ -1,12 +1,15 @@
 var Job = function(workerCode) {
+    this.codeUrl = "";
 
-    this.init = function() {
-        var blobBuilder = new BlobBuilder();
-        blobBuilder.append(workerCode);
-        var blobUrl = window.URL.createObjectURL(bb.getBlob());
-        this.worker = new Worker(blobUrl);
+    this.loadWorker = function() {
+        this.worker = new Worker(this.codeUrl);
+        this.worker.onmessage = this.handleMessages;
+    };
+    
+    this.handleMessages = function(event) {
+        console.log("message back");
+        console.log(event);
     }
-
 
     this.pause = function() {
         worker.postMessage({
@@ -36,10 +39,8 @@ var Job = function(workerCode) {
 
 
     this.start = function() {
-        worker.postMessage({
+        this.worker.postMessage({
             action : 'zetta/start'
         });
     }
-    
-    this.init();
 }
