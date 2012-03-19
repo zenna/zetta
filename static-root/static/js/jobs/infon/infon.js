@@ -104,23 +104,6 @@ var Space = function() {
 
 };
 
-var setupCanvas = function(space) {
-    var canvas = new spaceDraw(space);
-    return canvas;
-}
-
-var concatenateEdgesToBitString = function(space, currentInfon) {
-    var outInfonIds = space.getOutInfonsFromId(currentInfon.id);
-    var bitString = [];
-    if(outInfonIds.length > 0) {
-        for(var j = 0; j < outInfonIds.length; ++j) {
-            var outInfonBits = space.getInfonFromId(outInfonIds[j]).getPermBody();
-            bitString = bitString.concat(outInfonBits);
-        }
-    }
-    return bitString;
-}
-
 // Simulation step
 var doStep = function(space) {
     var toUpdate = [];
@@ -146,96 +129,146 @@ var doStep = function(space) {
         currentInfon.updateCurrentBody(currentInfon.tempBody);
     }
     return actuallyUpdated;
-    // console.log("actually changed:" ,actuallyUpdated);
+}
+
+var updateInfonsFromDec = function(dec, space, infonsToUpdate) {
+    var funcArgLengths = [];
+    var totalArgLength = 0;
+    for(var i = 0; i < infonsToUpdate; ++i) {
+        var infon = space.getInfonFromId(infonsToUpdate[i]);
+        funcArgLengths.push(infon.getLength());
+        totalArgLength += funcArgLengths[i];
+    }
+    var unslicedArgs = decToBitString(0, totalArgsLength);
+    if (Math.log(dec+1)/Math.LN2 > totalArgLength) {
+        throw "i is too big for number of infons specified";
+    }
+    
+    var startSlice = 0;
+    for(var j = 0; j < infonsToUpdate.length; ++j) {
+        var slice = unslicedArgs.slice(startSlice, startSlice + funcArgLengths[j]);
+        space.getInfromFromId(infonsToUpdate[j]).updatePermBody(slice);
+        allArgs.push(slice);
+        startSlice += funcArgLengths[j];
+    }
+    return allArgs;
+}
+
+// var sliceArgs = function(i, funcArgLengths, idMapping) {
+    // var totalArgsLength = sumArray(funcArgLengths);
+    // var updatedArgs = {};
+    // var allArgs = [];
+    // var unslicedArgs = decToBitString(0, totalArgsLength);
+    // var startSlice = 0;
+    // for(var j = 0; j < funcArgLengths.length; ++j) {
+        // updatedArgs[idMapping[j]] = unslicedArgs.slice(startSlice, startSlice + funcArgLengths[j]);
+        // allArgs.push(updatedArgs[idMapping[j]]);
+        // startSlice += funcArgLengths[j];
+    // }
+    // return {
+        // updatedArgs : updatedArgs,
+        // allArgs : allArgs
+    // };
+// }
+
+// Step until space is stable or maxSteps reached
+var stepUntilStable = function(space) {
+    var step;
+    var numStepsSimulate = 20;
+    var wasZero = false;
+    for( step = 0; step < numStepsSimulate; ++step) {
+        numChanged = doStep(space);
+        if(numChanged === 0) {
+            wasZero = true;
+        }
+        // TODO: DEBUG - REMOVE
+        if(wasZero === true && numChanged > 0) {
+            console.log("Houston! we have a stability prolbem");
+        }
+    }
+    var stable = numChanged === 0 ? true : false;
+    return [stable, step];
+};
+
+assesSpaceSlow = function(space) {
+
+}
+
+var assessSpace = function(space, infonsToUpdate, funcOutsToTest) {
+
+    //Cool down
+    var allArgs = updateInfonsFromDec(0, space, infonsToUpdate);
+    var stable = stepUntilStable(space);
+    var totalArgsLength = sumArray(allArgs);
+
+    // Exhaustively enumerate all combinations of input value
+    var score = 0;
+    for(var i = 0; i < Math.pow(2, totalArgsLength); ++i) {
+        // console.log("atempt:", attempt, " i:", i);
+        var allArgs = updateInfonsFromDec(i, space, infonsToUpdate);
+
+        var stableStep = stepUntilStable(space);
+        if(stableStep[0]) {
+            for(var j = 0; j < funcOutsToTest.length; ++j) {
+                var infon = space.getInfonFromId(funcOutsToTest[i]);
+                score += infon.outFunc(infon.getCurrentBody(), allArgs)[0];
+            }
+        }
+    }
+    return score;
 }
 
 // Randomly generate infons to recreate some function
 var optimiseRandomly = function(funcArgLengths, funcOuts, funcOutLengths, infonSizeRange, infonCountRange) {
     console.log("optimising");
-    var numTries = 10000;
+    var numTries = 1000;
     var winners = [];
     for(var attempt = 0; attempt < numTries; ++attempt) {
 
         var moon = new Space();
         createInfonsFromFuncs(funcArgLengths, funcOuts, funcOutLengths, moon);
-
-        var totalArgsLength = 0;
-        for(var i = 0; i < funcArgLengths.length; ++i) {
-            totalArgsLength += funcArgLengths[i];
-        }
+        var totalArgsLength = sumArray(funcArgLengths);
 
         var earth = createRandomSpace(getRandomelement(infonSizeRange), getRandomelement(infonCountRange));
         var idMapping = earth.appendSpace(moon);
         createRandomEdges(earth, 0.8);
 
-        // Randomise Outputs
+        // Randomise function args
         for(var i = 0; i < funcOuts.length; ++i) {
             var infonId = idMapping[funcArgLengths.length + i];
-            var infon = earth.getInfonFromId(infonId);
+            var infon = space.getInfonFromId(infonId);
             infon.updatePermBody(createRandomBitString(infon.getLength()));
         }
 
-        //Cool down
-        var updatedArgs = {};
-        var allArgs = [];
-        var unslicedArgs = decToBitString(0, totalArgsLength);
-        var startSlice = 0;
-        for(var j = 0; j < funcArgLengths.length; ++j) {
-            updatedArgs[idMapping[j]] = unslicedArgs.slice(startSlice, startSlice + funcArgLengths[j]);
-            allArgs.push(updatedArgs[idMapping[j]]);
-            startSlice += funcArgLengths[j];
-        }
-        updateSpecialInfons(earth, updatedArgs);
-        var step;
-        var numStepsSimulate = 10;
-        for( step = 0; step < numStepsSimulate; ++step) {
-            numChanged = doStep(earth);
-        }
-        var cooled = numChanged === 0 ? true : false;
-        if(cooled) {
-            var alpha;
-        }
-        // Exhaustively enumerate all combinations of input value
-        var score = 0;
-        for(var i = 0; i < Math.pow(2, totalArgsLength); ++i) {
-            // console.log("atempt:", attempt, " i:", i);
-            var updatedArgs = {};
-            var allArgs = [];
-            var unslicedArgs = decToBitString(i, totalArgsLength);
-
-            // num bits for all combs or arg values
-            var startSlice = 0;
-            for(var j = 0; j < funcArgLengths.length; ++j) {
-                updatedArgs[idMapping[j]] = unslicedArgs.slice(startSlice, startSlice + funcArgLengths[j]);
-                allArgs.push(updatedArgs[idMapping[j]]);
-                startSlice += funcArgLengths[j];
-            }
-
-            updateSpecialInfons(earth, updatedArgs);
-            var numStepsSimulate = 10;
-            var numChanged = 1;
-            // Anything g
-            // var step;
-            // for( step = 0; step < numStepsSimulate && numChanged > 0; ++step)
-            // {
-            // numChanged = doStep(earth);
-            // }
-            //
-            numChanged = doStep(earth);
-
-            // console.log(step)
-
-            // var maxNumStepsTillStable = 4;
-            if(cooled) {
-                // if(step < maxNumStepsTillStable) {
-                for(var j = 0; j < funcOuts.length; ++j) {
-                    var infonId = idMapping[funcArgLengths.length + j];
-                    var infon = earth.getInfonFromId(infonId);
-                    score += infon.outFunc(infon.getCurrentBody(), allArgs)[0];
-                }
-            }
-            // }
-        }
+        // // Randomise Outputs
+        // for(var i = 0; i < funcOuts.length; ++i) {
+        // var infonId = idMapping[funcArgLengths.length + i];
+        // var infon = earth.getInfonFromId(infonId);
+        // infon.updatePermBody(createRandomBitString(infon.getLength()));
+        // }
+        //
+        // //Cool down
+        // var updatedArgs = sliceArgs(0, funcArgLengths, idMapping);
+        // updateSpecialInfons(earth, updatedArgs.updatedArgs);
+        // var stable = stepUntilStable(earth);
+        //
+        // // Exhaustively enumerate all combinations of input value
+        // var score = 0;
+        // for(var i = 0; i < Math.pow(2, totalArgsLength); ++i) {
+        // // console.log("atempt:", attempt, " i:", i);
+        // var updatedArgs = sliceArgs(i, funcArgLengths, idMapping);
+        // updateSpecialInfons(earth, updatedArgs.updatedArgs);
+        // var stableStep = stepUntilStable(earth);
+        // if(stableStep[0]) {
+        // for(var j = 0; j < funcOuts.length; ++j) {
+        // var infonId = idMapping[funcArgLengths.length + j];
+        // var infon = earth.getInfonFromId(infonId);
+        // score += infon.outFunc(infon.getCurrentBody(),
+        // updatedArgs.allArgs)[0];
+        // }
+        // }
+        // }
+        var score = assessSpace(earth, totalArgsLength, funcArgLengths, funcOuts, idMapping);
         if(score > 1) {
             console.log("winner")
             winners.push(earth);
@@ -248,55 +281,14 @@ var optimiseRandomly = function(funcArgLengths, funcOuts, funcOutLengths, infonS
     setTimeout(optimiseRandomly, 100, funcArgLengths, funcOuts, funcOutLengths, infonSizeRange, infonCountRange)
 }
 
-var findAnd = function() {
-    var funcArgLengths = [1,1];
-    var funcOutLengths = 1;
-
-    var andOut = function(myValue, args) {
-        return myValue[0] === args[1][0] && args[0][0] ? [1] : [0];
-    }
-
-    var winners = optimiseRandomly(funcArgLengths, [andOut], [funcOutLengths], range(1, 4), range(1, 6));
-    a = winners;
-    console.log("drawing winners")
-    for(var i = 0; i < winners.length; ++i) {
-        var canvas = new spaceDraw(winners[i], '#candidates');
-
-        canvas.update();
-    }
-}
-
-var findNegation = function() {
-    var negateArgLength = 1;
-    var funcOutLengths = 1
-
-    var negateOut = function(myValue, args) {
-        return myValue[0] === 1 - args[0][0] ? [1] : [0];
-    }
-
-    var winners = optimiseRandomly([negateArgLength], [negateOut], [funcOutLengths], range(1, 4), range(1, 4));
-    a = winners;
-    console.log("drawing winners")
-    for(var i = 0; i < winners.length; ++i) {
-        var canvas = new spaceDraw(winners[i], '#candidates');
-
-        canvas.update();
-    }
-}
-
-var updateSpecialInfons = function(space, args) {
-    for(var infonId in args) {
-        var infon = space.getInfonFromId(infonId);
-        infon.updatePermBody(args[infonId]);
-    }
-}
+// var updateSpecialInfons = function(space, args) {
+    // for(var infonId in args) {
+        // var infon = space.getInfonFromId(infonId);
+        // infon.updatePermBody(args[infonId]);
+    // }
+// }
 
 var simulate = function(space, canvas, draw) {
-    step(space);
-    if(draw) {
-        canvas.update(space);
-    }
-    setTimeout(simulate, 1000, space, canvas);
     // var computeReactionProbability = function(infonA, infonB, volume,
     // temperature) {
     // var BOLTZMAN_CONSTANT = 3.2;
@@ -317,43 +309,10 @@ var simulate = function(space, canvas, draw) {
     // space.getNumInfons, space.getTemperature());
     // var willReact = Math.random() < reactionProbability ? true : false;
     // if (willReact) {
-    //
-    // }
-    // }
-    // }
-    //
-    // /*
-    // * For all pairs
-    // * var tempera
-    // *
-    // *
-    // */
-};
 
-var main = function(params, draw) {
-    if(params.earth === null) {
-        params.earth = createRandomSpace(20, 4);
-        setup(params.earth, 0.8);
-        if(draw) {
-            params.canvas = setupCanvas(params.earth);
-        }
-    }
-    else if(numUpdates.length === 0) {
-        simulate(params.earth, params.canvas)
-    }
-    return params;
 };
 
 
 $(document).ready(function() {
     findAnd();
-    // var params = {
-    // earth : null,
-    // canvas : null
-    // };
-    // $('html').click(function() {
-    // findNegation();
-    // // params = main(params, true);
-    // });
-
-})
+});
