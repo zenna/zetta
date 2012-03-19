@@ -13,37 +13,46 @@
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <br />
-        <script type='text/javascript' src="../include/jquery-1.7.1.min.js"></script>
+        <script type='text/javascript' src="../../include/jquery-1.7.1.min.js"></script>
+        <script type='text/javascript' src="d3.v2.js"></script>
+        <script type='text/javascript' src="helpers.js"></script>
         <script type='text/javascript' src="d3.v2.js"></script>
         <script type='text/javascript' src="infon.js"></script>
         <style type="text/css">
-            .chart div {
-                font: 10px sans      - serif;
-                background-color: steelblue;
-                text-align: right;
-                padding: 3px;
-                margin: 1px;
-                color: white;
-            }
-            rect {
-                fill: #fff;
-            }
-            .node {
-                fill: #000;
-            }
-            .cursor {
+            path.link {
                 fill: none;
-                stroke: brown;
+                stroke: #666;
+                stroke-width: 1.5px;
+            }
+            marker#licensing {
+                fill: green;
+            }
+            path.link.licensing {
+                stroke: green;
+            }
+            path.link.resolved {
+                stroke-dasharray: 0, 2 1;
+            }
+            circle {
+                fill: #ccc;
+                stroke: #333;
+                stroke-width: 1.5px;
+            }
+            text {
+                font: 10px sans-serif;
                 pointer-events: none;
             }
-            .link {
-                stroke: #999;
+            text.shadow {
+                stroke: #fff;
+                stroke-width: 3px;
+                stroke-opacity: .8;
             }
 
         </style>
     </head>
     <body>
         <div id="viz"></div>
+        <div id="candidates"></div>
         <div id="chart"></div>
         <span id="data"></span>
     </body>
