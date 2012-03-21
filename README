@@ -1,1 +1,10 @@
 This time..
+
+Directory Structure
+base - python/django server side code for issuing jobs etc
+config - config files for (static) web server
+node - code for regional nodes
+client - client side js code
+static-root - symbolic links for testing
+
+How to run locally
