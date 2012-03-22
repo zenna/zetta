@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <style type="text/css" style="display: none !important; ">
+            .programBox {
+                float: left;
+                border: 2px solid black;
+            }
+        </style>
+    </head>
+    <script src="../../include/jquery-1.7.1.min.js"></script>
+    <script src="../../include/common.js"></script>
+    <script src="program.js"></script>
+    <script src="domain.js"></script>
+    <script src="sparsesampling.js"></script>
+    <script src="model.js"></script>
+    <script src="helpers.js"></script>
+    <script src="scalers.js"></script>
+    <script src="color_map.js"></script>
+    <script src="RL.js"></script>
+    <body>
+        <span id="go">go</span>
+        <br />
+        <input id="buildModel" type="checkbox" value="false"/>
+        Build Model
+        <br />
+        <input id="boardSize" type="text" value="200"/>
+        <br />
+        <canvas id="board"></canvas>
+        <div id="canvas"></div>
+    </body>
+</html>
