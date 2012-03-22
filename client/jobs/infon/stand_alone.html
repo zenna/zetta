@@ -1,18 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset="utf-8" />
-        <!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
-        Remove this if you use the .htaccess -->
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-        <title>infon_test</title>
-        <meta name="description" content="" />
-        <meta name="author" content="Zenna Tavares" />
-        <meta name="viewport" content="width=device-width; initial-scale=1.0" />
-        <!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
-        <link rel="shortcut icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <br />
         <script type='text/javascript' src="jquery-1.7.1.min.js"></script>
         <script type='text/javascript' src="d3.v2.js"></script>
         <script type='text/javascript' src="helpers.js"></script>
@@ -51,9 +39,33 @@
         </style>
     </head>
     <body>
-        <div id="viz"></div>
         <div id="candidates"></div>
-        <div id="chart"></div>
-        <span id="data"></span>
+        <script type="text/javascript">
+            zetta = {log:function(x) {console.log(x);}};
+            var drawWinners = function(winners) {
+                for(var i = 0; i < winners.length; ++i) {
+                    var canvas = new spaceDraw(winners[i], '#candidates');
+                }
+                gwinners = winners;
+            }
+            totalStable = 0;
+            totalUnstable = 0;
+            paused = false;
+            $("html").keypress(function(event) {
+                if(event.which == 112) {
+                    event.preventDefault();
+                }
+                if(paused) {
+                    paused = false;
+                    console.log('unpausing');
+                }
+                else {
+                    paused = true;
+                    console.log('pausing');
+
+                }
+            });
+            findAnd(drawWinners);
+        </script>
     </body>
 </html>

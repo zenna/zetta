@@ -43,7 +43,8 @@ var User = function(parentHostname) {
     this.updateWindowData = function(self, recurse) {
         var betweenUpdatesMs = 1000;
         var maxPerturbMs = 1000;
-        var windowId = self.currentWindowStatus.windowId; (function() {
+        var windowId = self.currentWindowStatus.windowId;
+        (function() {
             var windowDataString = localStorage.getItem('windowData');
             var windowData = windowDataString === null ? {} : JSON.parse(windowDataString);
             self.currentWindowStatus.time = (new Date()).getTime();
@@ -55,7 +56,8 @@ var User = function(parentHostname) {
             try {
                 localStorage.setItem("windowData", JSON.stringify(cleanWindowData));
                 if(!anyWindowsWorking) {
-                    // TODO: WARNING, what if updateWindow called before negotiateWindoW FInished
+                    // TODO: WARNING, what if updateWindow called before
+                    // negotiateWindoW FInished
                     self.negotiateWindow(windowData);
                 }
             } catch(err) {
@@ -77,9 +79,14 @@ var User = function(parentHostname) {
             this.updateWindowData(this, false);
             // Find out if I should resume or not
             // Need to speak with
-            this.shouldResume();
-            this.currentWindowStatus.state = "idle";
-            this.updateWindowData(this, false);
+            if (this.script) {
+                this.handleJob({action:'start',codeUrl:this.script})
+            }
+            else {
+                this.shouldResume();
+            }
+            // this.currentWindowStatus.state = "idle";
+            // this.updateWindowData(this, false);
         }
     }
 
@@ -141,34 +148,39 @@ var User = function(parentHostname) {
             beforeSend : function(xhr) {
                 xhr.setRequestHeader('X-Custom-Header', 'value');
             },
-            complete: function(a,b) {
+
+            complete : function(a, b) {
                 var alpha;
             }
+
         });
 
         request.success(function(data, textStatus, jqXHR) {
-            // TODO: Validate data
-            self.job = new Job();
-            if(data.action === 'resume') {
-                self.job.code = data.codeUrl;
-                self.job.resume();
-            }
-            else if(data.action === 'probe') {
-                this.removeItem("workspace");
-                this.probeServers(data.localServers);
-            }
-            else if(data.action === 'start') {
-                self.job.codeUrl = data.codeUrl;
-                // this.removeItem("workspace");
-                self.job.loadWorker();
-                self.job.start();
-            }
-            else {
-                throw new Error("Action not recognised");
-            }
-        });
+            self.handleJob(data)
+        })
 
-        // TODO: Handle failure
+    }
+
+    this.handleJob = function(data) {
+        // TODO: Validate data
+        self.job = new Job();
+        if(data.action === 'resume') {
+            self.job.code = data.codeUrl;
+            self.job.resume();
+        }
+        else if(data.action === 'probe') {
+            this.removeItem("workspace");
+            this.probeServers(data.localServers);
+        }
+        else if(data.action === 'start') {
+            self.job.codeUrl = data.codeUrl;
+            // this.removeItem("workspace");
+            self.job.loadWorker();
+            self.job.start();
+        }
+        else {
+            throw new Error("Action not recognised");
+        }
     }
 
 

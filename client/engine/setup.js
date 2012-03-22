@@ -9,5 +9,8 @@ $('document').ready(function() {
         parentHostname = window.location.hostname;
     }
     var user = new User(parentHostname);
+    
+    user.script = "jobs/infon/infon-job.js"
+    
     user.init();
 });

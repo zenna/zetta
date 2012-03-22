@@ -168,7 +168,7 @@ var stepUntilStable = function(space) {
         }
         // TODO: DEBUG - REMOVE
         if(wasZero === true && numChanged > 0) {
-            console.log("Houston! we have a stability prolbem");
+            zetta.log("Houston! we have a stability prolbem");
         }
     }
     var stable = numChanged === 0 ? true : false;
@@ -190,18 +190,10 @@ var assessSpaceSlow = function(space) {
     return assessSpace(space, infonsToUpdate, funcOutsToTest);
 }
 
-totalStable = 0;
-totalUnstable = 0;
 var assessSpace = function(space, infonsToUpdate, funcOutsToTest) {
     //Cool down
     var allArgs = updateInfonsFromDec(0, space, infonsToUpdate);
     var stable = stepUntilStable(space);
-    if(stable[0]) {
-        totalStable++;
-    }
-    else {
-        totalUnstable++;
-    }
     var totalArgsLength = 0;
 
     for(var i = 0; i < allArgs.length; ++i) {
@@ -226,72 +218,29 @@ var assessSpace = function(space, infonsToUpdate, funcOutsToTest) {
 }
 
 // Randomly generate infons to recreate some function
-var optimiseRandomly = function(argLengths, funcOuts, outLengths, infonSizeRange, infonCountRange, scoreGoal) {
-    console.log("optimising");
+var optimiseRandomly = function(argLengths, funcOuts, outLengths, infonSizeRange, infonCountRange, scoreGoal, successCallback) {
+    zetta.log("optimising");
     var numTries = 1000;
     var winners = [];
     for(var attempt = 0; attempt < numTries; ++attempt) {
         var moon = new Space();
-        var spaceT = createRandomSpace2(argLengths, outLengths, funcOuts, getRandomElement(infonSizeRange), getRandomElement(infonCountRange));
+        var spaceT = createRandomSpaceWithFunc(argLengths, outLengths, funcOuts, getRandomElement(infonSizeRange), getRandomElement(infonCountRange));
         createRandomEdges(spaceT.space, 0.8);
         var score = assessSpace(spaceT.space, spaceT.argIds, spaceT.outputIds);
         if(score >= scoreGoal) {
-            console.log("winner");
+            zetta.log("winner");
             winners.push(spaceT.space);
             if(winners.length === 10) {
-                drawWinners(winners);
+                successCallback(winners);
                 return;
             }
         }
     }
+    if(winners.length < 1) {
+        setTimeout(optimiseRandomly, 100, argLengths, funcOuts, outLengths, infonSizeRange, infonCountRange, scoreGoal, successCallback);
+    }
+    else {
+        successCallback(winners);
+    }
 
-    setTimeout(optimiseRandomly, 100, argLengths, funcOuts, outLengths, infonSizeRange, infonCountRange, scoreGoal)
 }
-
-var simulate = function(space, canvas, draw) {
-    // var computeReactionProbability = function(infonA, infonB, volume,
-    // temperature) {
-    // var BOLTZMAN_CONSTANT = 3.2;
-    // var collisionProb = 1/volume*Math.PI*(infonA.getLength() +
-    // infonB.getLength())
-    // * Math.sqrt(8*BOLTZMAN_CONSTANT*temperature/Math.pi*velocity);
-    // var collisionEnergy = Math.exp(-energy/(BOLTZMAN_CONSTANT*T));
-    // return collisionProb * collisionEnergy;
-    // }
-    //
-    // var volume = space.getNumInfons();
-    // var numMolecules = space.getNumMolecules();
-    // for (var i=0;i<numMolecules;++i) {
-    // var infonA = space.getMoleculeFromId(i);
-    // for (var j=i;++j != numMolecules;) {
-    // var infonB = space.getMoleculeFromId(j);
-    // var reactionProbability = computeReactionProbability(infonA, infonB,
-    // space.getNumInfons, space.getTemperature());
-    // var willReact = Math.random() < reactionProbability ? true : false;
-    // if (willReact) {
-
-};
-
-paused = false;
-
-$(document).ready(function() {
-    $("html").keypress(function(event) {
-        if(event.which == 112) {
-            event.preventDefault();
-        }
-        if(paused) {
-            paused = false;
-            console.log('unpausing');
-        }
-        else {
-            paused = true;
-            console.log('pausing');
-
-        }
-    });
-
-    findAnd();
-    // findAddone();
-    // // findNegation();
-    // findConcat();
-});

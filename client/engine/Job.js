@@ -40,7 +40,7 @@ var Job = function(workerCode) {
 
     this.start = function() {
         this.worker.postMessage({
-            action : 'zetta/start'
+            changeState : 'start'
         });
     }
 }

@@ -18,6 +18,10 @@
         this.callbacks[id]();
         //DELETE callback
     }
+    
+    zetta.log = function(toLog) {
+        self.postMessage(toLog);
+    }
 
     // Browser memory
     zetta.saveClient = function(key, value, callback) {
@@ -67,8 +71,9 @@
     self.onmessage = function(message) {
         if( typeof message.data === "object") {
             if('changeState' in message.data) {
-                zetta.state = data.changeState;
-                $.publish("zetta/" + action);
+                zetta.state = message.data.changeState;
+                // $.publish("zetta/" + action);
+                startComputations();
             }
             if('save' in message.data) {
                 if(successful) {
