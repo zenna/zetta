@@ -23,3 +23,5 @@ self.addEventListener('zetta/start', (function(x) {
         finsdAnd(x);
     }
 })(postWinners), false);
+
+// :et's try two types of edge!

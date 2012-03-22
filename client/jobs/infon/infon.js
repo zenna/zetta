@@ -23,6 +23,11 @@ var Infon = function(bitString) {
     };
 
 
+    this.updateCurrentBodyDirectly = function(bitString) {
+        this.currentBody = bitString;
+    }
+
+
     this.updatePermBody = function(bitString) {
         this.permBody = bitString;
         this.currentBody = bitString;
@@ -38,8 +43,6 @@ var Infon = function(bitString) {
 var Space = function() {
     this.infons = [];
     this.edges = [];
-    this.numEdges = 0;
-    this.temperature = 0;
     this.simulating = false;
 
     this.addInfon = function(infon) {
@@ -50,20 +53,16 @@ var Space = function() {
     };
 
 
-    this.addEdge = function(infonA, infonB) {
-        this.edges[infonA.id].push(infonB.id);
-        this.numEdges += 1
+    this.addEdge = function(infonA, infonB, edgeType) {
+        this.edges[infonA.id].push({
+            target : infonB.id,
+            edgeType : edgeType
+        });
     };
 
 
-    this.addEdgeFromId = function(infonAId, infonBId) {
-        this.edges[infonAId].push(infonBId);
-        this.numEdges += 1
-    }
-
-
-    this.getNumEdges = function() {
-        return this.numEdges;
+    this.addEdgeFromId = function(infonAId, infonBId, edgeType) {
+        this.addEdge(this.getInfonFromId(infonAId), this.getInfonFromId(infonBId), edgeType);
     };
 
 
@@ -72,8 +71,17 @@ var Space = function() {
     };
 
 
-    this.getOutInfonsFromId = function(infonId) {
-        return this.edges[infonId];
+    this.getOutInfonsFromId = function(infonId, edgeType) {
+        var allEdges = this.edges[infonId];
+
+        if(allEdges === undefined) {
+            var alpha;
+        }
+
+        return typeof edgeType === "undefined" ? allEdges : allEdges.filter(function(element, index, array) {
+            return element.edgeType === edgeType;
+        });
+
     };
 
 
@@ -86,23 +94,23 @@ var Space = function() {
         return this.infons[infonId];
     };
 
-
-    this.appendSpace = function(space) {
-        var idMapping = {};
-        var numInfons = space.getNumInfons();
-        var displacement = this.getNumInfons();
-        for(var i = 0; i < numInfons; ++i) {
-            var toAdd = space.getInfonFromId(i);
-            var newInfonId = this.addInfon(toAdd);
-            var edges = space.getOutInfonsFromId(i);
-            this.edges[i] = edges.map(function(value) {
-                return value + displacement;
-            });
-
-            idMapping[i] = newInfonId;
-        }
-        return idMapping;
-    }
+    // Needs updating for multiple edge types
+    // this.appendSpace = function(space) {
+    // var idMapping = {};
+    // var numInfons = space.getNumInfons();
+    // var displacement = this.getNumInfons();
+    // for(var i = 0; i < numInfons; ++i) {
+    // var toAdd = space.getInfonFromId(i);
+    // var newInfonId = this.addInfon(toAdd);
+    // var edges = space.getOutInfonsFromId(i);
+    // this.edges[i] = edges.map(function(value) {
+    // return value + displacement;
+    // });
+    //
+    // idMapping[i] = newInfonId;
+    // }
+    // return idMapping;
+    // }
 
 };
 
@@ -111,16 +119,30 @@ var doStep = function(space) {
     var toUpdate = [];
     for(var i = 0; i < space.getNumInfons(); ++i) {
         var currentInfon = space.getInfonFromId(i);
-        var outInfonIds = space.getOutInfonsFromId(i);
-        if(outInfonIds.length > 0) {
-            var bitString = [];
-            for(var j = 0; j < outInfonIds.length; ++j) {
-                var outInfonBits = space.getInfonFromId(outInfonIds[j]).getCurrentBody();
-                bitString = bitString.concat(outInfonBits);
+        var body = currentInfon.getCurrentBody();
+
+        // Do replace if infon has both edges for some reason
+        // var replaceBitString = concatenateEdgesToBitString(space, currentInfon, 'replace');
+        // if(replaceBitString.length > 0) {
+            // body = currentInfon.tempBody = replaceBitString;
+            // toUpdate.push(i);
+// 
+            // if(replaceBitString.length != currentInfon.getLength()) {
+                // throw "replace infon is wrong size";
+            // }
+        // }
+        // else {
+            var outInfonIds = space.getOutInfonsFromId(currentInfon.id, 'apply');
+            if(outInfonIds.length > 0) {
+                var bitString = [];
+                for(var j = 0; j < outInfonIds.length; ++j) {
+                    var outInfonBits = space.getInfonFromId(outInfonIds[j].target).getCurrentBody();
+                    bitString = bitString.concat(outInfonBits);
+                }
+                currentInfon.tempBody = hokum(bitString, currentInfon.getPermBody(), currentInfon.getLength());
+                toUpdate.push(i);
             }
-            currentInfon.tempBody = hokum(bitString, currentInfon.getPermBody(), currentInfon.getLength());
-            toUpdate.push(i);
-        }
+        // }
     }
     var actuallyUpdated = 0;
     for(var i = 0; i < toUpdate.length; ++i) {
@@ -133,6 +155,10 @@ var doStep = function(space) {
     return actuallyUpdated;
 }
 
+// Updates the current body of one or more infons
+// With a decimal integer which when converted to a bitString
+// is of the appropriate lenght: makes it easy to enumerate
+// over possible argument values
 var updateInfonsFromDec = function(dec, space, infonsToUpdate) {
     var argLengths = [], allArgs = [];
     var totalArgLength = 0;
@@ -204,7 +230,6 @@ var assessSpace = function(space, infonsToUpdate, funcOutsToTest) {
     var score = 0;
     for(var i = 0; i < Math.pow(2, totalArgsLength); ++i) {
         var allArgs = updateInfonsFromDec(i, space, infonsToUpdate);
-        // console.log(allArgs);
 
         var stableStep = stepUntilStable(space);
         if(stableStep[0]) {

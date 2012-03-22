@@ -14,7 +14,7 @@ var findAnd = function(successCallback) {
         return myValue[0] === (args[1][0] && args[0][0]) ? [1] : [0];
     }
 
-    var winners = optimiseRandomly(funcArgLengths, [andOut], [funcOutLengths], range(1, 4), range(0, 4), score, successCallback);
+    var winners = optimiseRandomly(funcArgLengths, [andOut], [funcOutLengths], range(1, 4), range(0, 3), score, successCallback);
 }
 
 var findAddOne = function() {
@@ -53,21 +53,14 @@ var findConcat = function() {
     optimiseRandomly([1, 1], [negateOut], [1], range(1, 5), range(1, 5), score);
 }
 
-var findNegation = function(successCallback) {
+var findNot = function(successCallback) {
     var argLengths = [1];
     var outputLengths = [1];
     var scoreGoal = Math.pow(2, sumArray(argLengths));
 
     var fitnessFunc = function(myValue, args) {
-        return myValue[0] === 1 - args[0][0] ? [1] : [0];
+        return myValue[0] ===  1 - args[0][0] ? [1] : [0];
     }
 
-    optimiseRandomly(argLengths, [fitnessFunc], outputLengths, range(1, 4), range(0, 3), scoreGoal,successCallback);
-}
-
-var drawWinners = function(winners) {
-    for(var i = 0; i < winners.length; ++i) {
-        // var canvas = new spaceDraw(winners[i], '#candidates');
-        self.postMessage(winners[i].getNumInfons());
-    }
+    optimiseRandomly(argLengths, [fitnessFunc], outputLengths, range(1, 5), range(0, 5), scoreGoal,successCallback);
 }
