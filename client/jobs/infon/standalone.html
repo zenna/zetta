@@ -8,9 +8,12 @@
         <script type='text/javascript' src="helpers.js"></script>
         <script type='text/javascript' src="funcs.js"></script>
         <script type='text/javascript' src="infon.js"></script>
+        <script type='text/javascript' src="space.js"></script>
+        <script type='text/javascript' src="optimisation.js"></script>
         <script type='text/javascript' src="../RL/domain.js"></script>
         <script type='text/javascript' src="../RL/scalers.js"></script>
         <script type='text/javascript' src="../RL/color_map.js"></script>
+        <script type='text/javascript' src="standalone.js"></script>
         <style type="text/css">
             path.link {
                 fill: none;
@@ -46,80 +49,5 @@
     <body>
         <div id="candidates"></div>
         <canvas id="board"></canvas>
-        <script type="text/javascript">
-            zetta = {
-                log : function(x) {
-                    console.log(x);
-                }
-
-            };
-            var drawWinners = function(winners) {
-                for(var i = 0; i < winners.length; ++i) {
-                    var canvas = new spaceDraw(winners[i], '#candidates');
-                }
-                gwinners = winners;
-            }
-
-            totalStable = 0;
-            totalUnstable = 0;
-            paused = false;
-            $("html").keypress(function(event) {
-                if(event.which == 112) {
-                    event.preventDefault();
-                }
-                if(paused) {
-                    paused = false;
-                    console.log('unpausing');
-                }
-                else {
-                    paused = true;
-                    console.log('pausing');
-
-                }
-            });
-
-            var nand = new Space();
-            var a = new Infon([0]);
-            a.types.push('arg');
-            var b = new Infon([0]);
-            $('document').ready(function() {
-
-                var initialState = createInitialState(64, 64, 5, 5);
-                var world = new perimeterWorld(initialState);
-
-                var observations = {
-                    number : 4,
-                    range : 2,
-                    func : function(i) {
-                        return function(state) {
-                            var colour = state.getFitness(i, i);
-                            return colour;
-                        }
-
-                    }
-
-                };
-
-                var actions = {
-                    range : 4,
-
-                };
-
-                actions.func = (function(x) {
-                    return function(bitString) {
-                        var index = bitStringToDec(bitString);
-                        var possibleActions = ["moveUp", "moveDown", "moveLeft", "moveRight", "dontMove"];
-                        var action = [possibleActions[index], []];
-                        x.executeAction(action, null);
-                    }
-
-                })(world)
-
-                var space = createRandomSpaceWithDomain([actions], [observations], 10, 10);
-                createRandomEdges(space, 0.5);
-                simulateAndDrawSpace(space);
-            });
-
-        </script>
     </body>
 </html>

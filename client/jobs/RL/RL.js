@@ -18,6 +18,10 @@
 
 // Problem is havent worke dout likelihood estimation, acceptance ratio is far too high, action can be put down
 
+// TODO: Hook up observations
+// TOOD: Learning RL framework, simulated annealing
+// RL - either likelihood or how good it was before
+
 // TODO: 1. try out new infon models
 // TODO: 2. develop interface for infons/jsChurch/link to 'world'
 // TODO 3. allow higher order functions in RlProgram Model
@@ -84,6 +88,7 @@ var doLearningInnerLoop = function(time, observedData, stateHolder, domain, samp
     observedData.push(bestAction, newStateReward[1], newStateReward[0]);
     stateHolder.state = newStateReward[0];
 };
+
 
 var doLearningLoops = function(time, observedData, state, domain, sampleAction, selectModel, numSamples, depth, discount, stateQueries) {
     stateHolder = {};
