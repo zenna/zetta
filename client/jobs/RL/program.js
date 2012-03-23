@@ -476,14 +476,3 @@ var sampleProgramAction = function(program) {
         throw "Action " + actionType + " type not found";
     }
 }
-
-// var prog;
-// window.onload = function() {
-// prog = new Program();
-// for(var i = 0; i < 30; ++i) {
-// $('#canvas').empty();
-// action = sampleAction(prog);
-// action[0].apply(prog, action[1]);
-// }
-// prog.draw();
-// };

@@ -120,6 +120,10 @@ var doStep = function(space) {
     for(var i = 0; i < space.getNumInfons(); ++i) {
         var currentInfon = space.getInfonFromId(i);
         var body = currentInfon.getCurrentBody();
+        
+        if (inArray(currentInfon.types, 'action') ) {
+            currentInfon.actionFunc(currentInfon.getCurrentBody());
+        }
 
         // Do replace if infon has both edges for some reason
         // var replaceBitString = concatenateEdgesToBitString(space, currentInfon, 'replace');

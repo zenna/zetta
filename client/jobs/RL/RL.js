@@ -18,6 +18,15 @@
 
 // Problem is havent worke dout likelihood estimation, acceptance ratio is far too high, action can be put down
 
+// TODO: 1. try out new infon models
+// TODO: 2. develop interface for infons/jsChurch/link to 'world'
+// TODO 3. allow higher order functions in RlProgram Model
+// TODO 4. Implement sparse sampling in actual i) jsChurch and possibly other MoCs
+// TODO: Figure out scoring of models
+// TODO: 5. Figure out interface with zetta
+// TODO: Separate out jquery/dom stuff from RL
+// TODO: Figure out learning in other infon models
+// TODO: figure out link model
 
 var selectRlProgramModel = function(observedData, numSamples, stateQueries) {
     if ($('#buildModel').is(':checked') === false) {
@@ -64,24 +73,7 @@ var selectRlProgramModel = function(observedData, numSamples, stateQueries) {
     newState.draw();
     var model = newState.compileAll();
     return model;
-}
-
-var doLearning = function(time, observedData, state, domain, sampleAction, selectModel, numSamples, depth, discount, stateQueries) {
-    if(stateQueries['canContinue']['codeAsFunction'](time, state) === true) {
-        console.log("New Round");
-        var currentModel = selectModel(observedData, 10, stateQueries);
-        // TODO: These args not relevant for selectRLProgramModel?
-        var bestAction = sparseSampleMcmc(depth, numSamples, discount, currentModel, state, sampleAction, stateQueries);
-        var newStateReward = domain.executeAction(bestAction, stateQueries);
-        observedData.push(bestAction, newStateReward[1], newStateReward[0]);
-        console.log(time);
-        return doLearning(time + 1, observedData, newStateReward[0], domain, sampleAction, selectModel, numSamples, depth, discount, stateQueries);
-    }
-    else {
-        console.log("Game Over");
-        return state;
-    }
-}
+};
 
 var doLearningInnerLoop = function(time, observedData, stateHolder, domain, sampleAction, selectModel, numSamples, depth, discount, stateQueries) {
     console.log("new Round, time = " + time);
@@ -91,7 +83,7 @@ var doLearningInnerLoop = function(time, observedData, stateHolder, domain, samp
     var newStateReward = domain.executeAction(bestAction, stateQueries);
     observedData.push(bestAction, newStateReward[1], newStateReward[0]);
     stateHolder.state = newStateReward[0];
-}
+};
 
 var doLearningLoops = function(time, observedData, state, domain, sampleAction, selectModel, numSamples, depth, discount, stateQueries) {
     stateHolder = {};
@@ -101,129 +93,4 @@ var doLearningLoops = function(time, observedData, state, domain, sampleAction, 
         time += 1;
     }
     return state;
-}
-
-
-$(document).ready(function() {
-    $('#go').click(function() {
-        console.log("Starting RL");
-        var numIterations = 5;
-        var time = 0;
-        // Sparse Sampling Params
-        var numSamples = 200;
-        var depth = 200;
-        var discount = 1.5;
-
-        // Domain params
-        var sizeX = $("#boardSize").val();
-        var sizeY = $("#boardSize").val();
- 		var startPosX = 7;
- 		var startPosY = 7;
-        // var startPosX = sizeX % 0;
-        // var startPosY = sizeY % 0;
-        var stateQueries = {
-            'canContinue' : {
-                modifyable : false,
-                placable : false,
-                typeSig : [['number', 'state'], 'bool'],
-                codeAsFunction : function(time, state) {
-                    return time < 10000 ? true : false;
-                }
-
-            },
-            'moveUp' : {
-                modifyable : true,
-                placable : false,
-                typeSig : [['state'], 'state'],
-                codeAsTree : {
-                    returnNode : [null]
-                }
-            },
-            'moveDown' : {
-                modifyable : true,
-                placable : false,
-                typeSig : [['state'], 'state'],
-                codeAsTree : {
-                    returnNode : [null]
-                }
-            },
-            'moveLeft' : {
-                modifyable : true,
-                placable : false,
-                typeSig : [['state'], 'state'],
-                codeAsTree : {
-                    returnNode : [null]
-                }
-            },
-            'moveRight' : {
-                modifyable : true,
-                placable : false,
-                typeSig : [['state'], 'state'],
-                codeAsTree : {
-                    returnNode : [null]
-                }
-            },
-            'getAgentX' : {
-                modifyable : false,
-                typeSig : [['state'], 'number'],
-                codeAsFunction : function(state) {
-                    return state[2];
-                }
-
-            },
-            'getAgentY' : {
-                modifyable : false,
-                typeSig : [['state'], 'number'],
-                codeAsFunction : function(state) {
-                    return state[3];
-                }
-
-            },
-            'getWorldX' : {
-                modifyable : false,
-                typeSig : [['state'], 'number'],
-                codeAsFunction : function(state) {
-                    return state[0];
-                }
-
-            },
-            getWorldY : {
-                modifyable : false,
-                typeSig : [['state'], 'number'],
-                codeAsFunction : function(state) {
-                    return state[1];
-                }
-
-            },
-            setPosX : {
-                modifyable : false,
-                typeSig : [['state', 'number'], 'state'],
-                codeAsFunction : function(state, xPosition) {
-                    var newState = jQuery.extend(true, {}, state);
-                    newState[2] = xPosition;
-                    return newState;
-                }
-
-            },
-            setPosY : {
-                modifyable : false,
-                typeSig : [['state', 'number'], 'state'],
-                codeAsFunction : function(state, xPosition) {
-                    var newState = jQuery.extend(true, {}, state);
-                    newState[3] = xPosition;
-                    return newState;
-                }
-
-            }
-        };
-        sampleAction = function(state) {
-            var possibleActions = ["moveUp", "moveDown", "moveLeft", "moveRight", "dontMove"];
-            return [stGetRandomElement(possibleActions), []];
-        }
-
-        var initialState = createInitialState(sizeX, sizeY, startPosX, startPosY);
-        var observedData = [initialState];
-        doLearningLoops(time, observedData, initialState, new perimeterWorld(initialState), sampleAction, selectRlProgramModel, numSamples, depth, discount, stateQueries);
-    })
-
-})
+};

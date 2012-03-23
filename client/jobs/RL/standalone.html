@@ -27,5 +27,130 @@
         <br />
         <canvas id="board"></canvas>
         <div id="canvas"></div>
+        <script type = "text/javascript">
+            $(document).ready(function() {
+                $('#go').click(function() {
+                    console.log("Starting RL");
+                    var numIterations = 5;
+                    var time = 0;
+                    // Sparse Sampling Params
+                    var numSamples = 200;
+                    var depth = 200;
+                    var discount = 1.5;
+
+                    // Domain params
+                    var sizeX = $("#boardSize").val();
+                    var sizeY = $("#boardSize").val();
+                    var startPosX = 7;
+                    var startPosY = 7;
+                    // var startPosX = sizeX % 0;
+                    // var startPosY = sizeY % 0;
+                    var stateQueries = {
+                        'canContinue' : {
+                            modifyable : false,
+                            placable : false,
+                            typeSig : [['number', 'state'], 'bool'],
+                            codeAsFunction : function(time, state) {
+                                return time < 10000 ? true : false;
+                            }
+
+                        },
+                        'moveUp' : {
+                            modifyable : true,
+                            placable : false,
+                            typeSig : [['state'], 'state'],
+                            codeAsTree : {
+                                returnNode : [null]
+                            }
+                        },
+                        'moveDown' : {
+                            modifyable : true,
+                            placable : false,
+                            typeSig : [['state'], 'state'],
+                            codeAsTree : {
+                                returnNode : [null]
+                            }
+                        },
+                        'moveLeft' : {
+                            modifyable : true,
+                            placable : false,
+                            typeSig : [['state'], 'state'],
+                            codeAsTree : {
+                                returnNode : [null]
+                            }
+                        },
+                        'moveRight' : {
+                            modifyable : true,
+                            placable : false,
+                            typeSig : [['state'], 'state'],
+                            codeAsTree : {
+                                returnNode : [null]
+                            }
+                        },
+                        'getAgentX' : {
+                            modifyable : false,
+                            typeSig : [['state'], 'number'],
+                            codeAsFunction : function(state) {
+                                return state[2];
+                            }
+
+                        },
+                        'getAgentY' : {
+                            modifyable : false,
+                            typeSig : [['state'], 'number'],
+                            codeAsFunction : function(state) {
+                                return state[3];
+                            }
+
+                        },
+                        'getWorldX' : {
+                            modifyable : false,
+                            typeSig : [['state'], 'number'],
+                            codeAsFunction : function(state) {
+                                return state[0];
+                            }
+
+                        },
+                        getWorldY : {
+                            modifyable : false,
+                            typeSig : [['state'], 'number'],
+                            codeAsFunction : function(state) {
+                                return state[1];
+                            }
+
+                        },
+                        setPosX : {
+                            modifyable : false,
+                            typeSig : [['state', 'number'], 'state'],
+                            codeAsFunction : function(state, xPosition) {
+                                var newState = jQuery.extend(true, {}, state);
+                                newState[2] = xPosition;
+                                return newState;
+                            }
+
+                        },
+                        setPosY : {
+                            modifyable : false,
+                            typeSig : [['state', 'number'], 'state'],
+                            codeAsFunction : function(state, xPosition) {
+                                var newState = jQuery.extend(true, {}, state);
+                                newState[3] = xPosition;
+                                return newState;
+                            }
+
+                        }
+                    };
+                    sampleAction = function(state) {
+                        var possibleActions = ["moveUp", "moveDown", "moveLeft", "moveRight", "dontMove"];
+                        return [stGetRandomElement(possibleActions), []];
+                    }
+
+                    var initialState = createInitialState(sizeX, sizeY, startPosX, startPosY);
+                    var observedData = [initialState];
+                    doLearningLoops(time, observedData, initialState, new perimeterWorld(initialState), sampleAction, selectRlProgramModel, numSamples, depth, discount, stateQueries);
+                })
+
+            })
+        </script>
     </body>
 </html>
