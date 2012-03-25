@@ -23,10 +23,11 @@
             marker#licensing {
                 fill: green;
             }
-            path.link.licensing {
-                stroke: green;
+            path.link.virtualToTarget, path.link.virtualFromSource {
+                stroke-dasharray: 0, 2 1;
             }
             path.link.replace {
+                stroke: green
                 stroke-dasharray: 0, 2 1;
             }
             circle {

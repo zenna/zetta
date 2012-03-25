@@ -7,10 +7,10 @@ var assessSpaceSlow = function(space) {
     var infonsToUpdate = [], funcOutsToTest = [];
     for(var i = 0; i < numInfons; ++i) {
         var infon = space.getInfonFromId(i);
-        if('arg' in infon.types) {
+        if(inArray(infon.types, 'arg')) {
             infonsToUpdate.push(infon.id)
         }
-        else if('output' in infon.types) {
+        else if(inArray(infon.types, 'output')) {
             funcOutsToTest.push(infon.id)
         }
     }
@@ -50,8 +50,8 @@ var optimiseRandomly = function(argLengths, funcOuts, outLengths, infonSizeRange
     var winners = [];
     for(var attempt = 0; attempt < numTries; ++attempt) {
         var moon = new Space();
-        var spaceT = createRandomSpaceWithFunc(argLengths, outLengths, funcOuts, getRandomElement(infonSizeRange), getRandomElement(infonCountRange));
-        createRandomEdges(spaceT.space, 0.8);
+        var spaceT = createRandomSpaceWithFunc(argLengths, outLengths, funcOuts, getRandomElement(infonSizeRange), getRandomElement(infonCountRange), false);
+        createRandomEdges(spaceT.space, 0.8, 0.8);
         var score = assessSpace(spaceT.space, spaceT.argIds, spaceT.outputIds);
         if(score >= scoreGoal) {
             zetta.log("winner");

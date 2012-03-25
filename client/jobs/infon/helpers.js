@@ -11,7 +11,7 @@ var numBitsReqForDecimal = function(decimal) {
     return Math.ceil(Math.log(decimal) / Math.LN2);
 };
 
-var inArray = function(array,value) {
+var inArray = function(array, value) {
     return array.indexOf(value) === -1 ? false : true;
 }
 
@@ -54,10 +54,10 @@ var decToBitString = function(decimal, length) {
         bitString = [0];
     }
     else {
-        var bitString = [];
+        bitString = [];
         while(decimal > 0) {
             bitString.unshift(decimal % 2);
-            decimal = decimal >> 1
+            decimal = decimal >> 1;
         }
     }
     if( typeof length !== "undefined" && length > bitString.length) {
@@ -95,7 +95,7 @@ var createRandomSpace = function(maxSize, numInfons) {
 };
 
 // Create a space of random infons
-var createRandomSpaceWithFunc = function(argLengths, outputLengths, funcOuts, maxSize, numInfons) {
+var createRandomSpaceWithFunc = function(argLengths, outputLengths, funcOuts, maxSize, numInfons, allowArgOutputSharing) {
     var earth = new Space();
     var argIds = [], outputIds = [];
 
@@ -106,15 +106,15 @@ var createRandomSpaceWithFunc = function(argLengths, outputLengths, funcOuts, ma
         earth.addInfon(randomInfon);
         argIds.push(randomInfon.id);
 
-    };
+    }
 
-    for(var i = 0; i < outputLengths; ++i) {
+    for(var i = 0; i < outputLengths.length; ++i) {
         possibleShares = allIndexesOf(argLengths, outputLengths[i]);
         possibleShares = possibleShares.filter(function(element, index, array) {
             return !('output' in earth.getInfonFromId(element).types);
         });
 
-        var shareArg = flip(0.5);
+        var shareArg = flip(0.5) && allowArgOutputSharing;
         var randomInfon;
         if(shareArg && possibleShares.length > 0) {
             randomInfon = earth.getInfonFromId(getRandomElement(possibleShares));
@@ -192,7 +192,7 @@ var spaceToGraph = function(space) {
         var outInfons = space.getOutInfonsFromId(i);
         for(var j = 0; j < outInfons.length; ++j) {
             links.push({
-                source : outInfons[j].target,
+                source : outInfons[j].sourceId,
                 target : currentInfon.id,
                 value : 1,
                 type : outInfons[j].edgeType
@@ -213,28 +213,33 @@ var concatenateEdgesToBitString = function(space, currentInfon, edgeType) {
     var bitString = [];
     if(outInfonIds.length > 0) {
         for(var j = 0; j < outInfonIds.length; ++j) {
-            var outInfonBits = space.getInfonFromId(outInfonIds[j].target).getCurrentBody();
+            var outInfonBits = space.getInfonFromId(outInfonIds[j].sourceId).getCurrentBody();
             bitString = bitString.concat(outInfonBits);
         }
     }
     return bitString;
 }
 
-var createRandomEdges = function(space, p) {
+var createRandomEdges = function(space, virtualEdgeProb, applyEdgeProb) {
     var numInfons = space.getNumInfons();
+    
+    // Create virtual edges first
     for(var i = 0; i < numInfons; ++i) {
         var locus = space.getInfonFromId(i);
-        if(Math.random() < p) {
+        if(Math.random() < virtualEdgeProb / 2) {
+            var randomSource = space.getInfonFromId(randInteger(0, numInfons));
+            addVirtualEdge(space, locus, randomSource, createRandomBitString);
+        }
+    }
+
+    // Then create 'apply' edges
+    for(var i = 0; i < numInfons; ++i) {
+        var locus = space.getInfonFromId(i);
+        if(Math.random() < applyEdgeProb) {
             var edgeType, numBitsInput;
-            if(flip(0.5) === true) {
-                var length = locus.getLength();
-                numBitsInput = Math.pow(2, length) * length;
-                edgeType = 'apply';
-            }
-            else {
-                edgeType = 'replace';
-                numBitsInput = locus.getLength();
-            }
+            var length = locus.getLength();
+            numBitsInput = Math.pow(2, length) * length;
+            edgeType = 'apply';
 
             var inputBitsRemaining = numBitsInput;
             var neighbourIds = [], numTries = 1000;
@@ -260,9 +265,17 @@ var createRandomEdges = function(space, p) {
     }
 };
 
-var addReplaceEdge = function(space, infonA, infonB) {
-    space.addEdge(infonA, infonB, 'replace');
-    
+// Adds replacement infon from source to target
+var addVirtualEdge = function(space, targetInfon, sourceInfon, bitStringGen) {
+    var lengthTarget = targetInfon.getLength();
+    var lengthSource = sourceInfon.getLength();
+    var virtualInfonSize = lengthTarget * Math.pow(2, lengthSource);
+
+    var virtualInfon = new Infon(bitStringGen(virtualInfonSize));
+    virtualInfon.types.push('virtual');
+    space.addInfon(virtualInfon);
+    space.addEdge(virtualInfon, sourceInfon, 'virtualFromSource');
+    space.addEdge(targetInfon, virtualInfon, 'virtualToTarget');
 }
 
 // Apply function defined by bitString func to argument
@@ -300,13 +313,13 @@ var runSimulation = function(space, canvas) {
 var spaceDraw = function(space, parent) {
     var self = this;
     var graph = spaceToGraph(space);
-    var w = 800, h = 800;
+    var w = 200, h = 200;
     var force = d3.layout.force().nodes(d3.values(graph.nodes)).links(graph.links).size([w, h]).linkDistance(60).charge(-300).on("tick", tick).start();
 
     var svg = d3.select(parent).append("svg:svg").attr("width", w).attr("height", h);
 
     // Per-type markers, as they don't inherit styles.
-    svg.append("svg:defs").selectAll("marker").data(["apply", "replace"]).enter().append("svg:marker").attr("id", String).attr("viewBox", "0 -5 10 10").attr("refX", 15).attr("refY", -1.5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("svg:path").attr("d", "M0,-5L10,0L0,5");
+    svg.append("svg:defs").selectAll("marker").data(["apply", "virtualToTarget", "virtualFromSource"]).enter().append("svg:marker").attr("id", String).attr("viewBox", "0 -5 10 10").attr("refX", 15).attr("refY", -1.5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("svg:path").attr("d", "M0,-5L10,0L0,5");
 
     var path = svg.append("svg:g").selectAll("path").data(force.links()).enter().append("svg:path").attr("class", function(d) {
         return "link " + d.type;
@@ -315,22 +328,25 @@ var spaceDraw = function(space, parent) {
     });
 
     var circle = svg.append("svg:g").selectAll("circle").data(force.nodes()).enter().append("svg:circle").attr("r", function(d) {
-        return 6 * space.getInfonFromId(d.id).getLength();
+        return 6;// * space.getInfonFromId(d.id).getLength();
     }).style("fill", function(d) {
         if(d.types.indexOf('arg') != -1 && d.types.indexOf('output') != -1) {
             return "green";
         }
-        else if(d.types.indexOf('arg') != -1) {
+        else if(d.types.indexOf('arg') !== -1) {
             return "blue"
         }
-        else if(d.types.indexOf('output') != -1) {
+        else if(d.types.indexOf('output') !== -1) {
             return "red";
         }
-        else if (d.types.indexOf('perhipheral') != -1) {
+        else if(d.types.indexOf('perhipheral') != -1) {
             return "pink";
         }
-        else if (d.types.indexOf('action') != -1) {
+        else if(d.types.indexOf('action') != -1) {
             return "yellow";
+        }
+        else if(d.types.indexOf('virtual') != -1) {
+            return "orange";
         }
         else {
             return "grey";
@@ -410,6 +426,7 @@ var spaceDraw = function(space, parent) {
             })(i);
         }
     }
+
 
     this.update();
 };

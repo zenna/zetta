@@ -3,20 +3,21 @@
  */
 // ------ Array Functions ---------
 // Sum values in array
+"use strict";
 var sum = function(arrayToSum) {
     return arrayToSum.reduce(function(previousValue, currentValue, index, array) {
         return previousValue + currentValue;
     });
 
-}
+};
 
 // Min value in array
 var min = function(arrayToMin) {
     return Math.min.apply(Math.min, arrayToMin);
-}
+};
 
 // Are arrays a and b equal? (required because [1,2] != [1,2] in js)
-function arraysEqual(a, b) {
+var arraysEqual = function(a, b) {
     return !(a < b || b < a);
 };
 
@@ -33,15 +34,14 @@ var getRandomElement = function(list) {
 var sumArray = function(arrayToSum) {
     return arrayToSum.reduce(function(previousValue, currentValue, index, array) {
         return previousValue + currentValue;
-    })
-
+    });
 };
 
 var allIndexesOf = function(list, value) {
     var done = false, pos = 0;
     var indices = [];
     while(done === false) {
-        pos = list.indexOf(value, pos)
+        pos = list.indexOf(value, pos);
         if(pos === -1) {
             done = true;
         }
@@ -51,7 +51,7 @@ var allIndexesOf = function(list, value) {
         }
     }
     return indices;
-}
+};
 
 // Return a range on interval [begin,end)
 var range = function(begin, end) {
@@ -71,6 +71,27 @@ var pickRandomProperty = function(obj) {
         }
     }
     return result;
+};
+
+// This function is for rearranging a list into an object keyed by some
+// property of elements in the lsit 
+// it applies keyFilterFunc to elements to generate the key
+// And applies objFilterFunc to elements to define what is stored
+// By default objFilterFunc stores the entire element
+var rearrangeListToObj = function(list, keyFilterFunc, objFilterFunc) {
+    var objFilterFunc = typeof objFilterFunc === "undefined" ? function(x) {
+        return x;
+    } : objFilterFunc;
+
+    var rearranged = {};
+    for(var i = 0; i < list.length; ++i) {
+        var key = keyFilterFunc(list[i]).toString();
+        if(!( key in rearranged)) {
+            rearranged[key] = [];
+        }
+        rearranged[key].push(objFilterFunc(list[i]));
+    }
+    return rearranged;
 };
 
 // Returns nested object from parent and list of properties (i.e. strack trace)
