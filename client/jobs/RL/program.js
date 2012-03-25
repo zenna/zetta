@@ -1,8 +1,16 @@
+"use strict"
+// Object to store a program, which consists of one or more functions
+// including a 'main' function
+// typesig (type signature) = [['typeOfArg1',...,'typeofArgN'] 'typeOfOutput']
+// codeAsTree = {'functionName':['valueOfArg1PassedToFunc',..]}
+// 'valueOfArgNPassedToFunc' can be a value or a function.
 
-function Program(observedData, stateQueries) {
+var Program = function(observedData, stateQueries) {
     this.stateQueries = stateQueries;
     this.observedData = observedData;
-    this.length = 0;
+    var length = 0;
+    this.codeAsString = "";
+    this.__dirty = true;
     this.functions = {
         'main' : {
             modifyable : true,
@@ -14,88 +22,15 @@ function Program(observedData, stateQueries) {
             },
             __dirty : true
         },
-        'combineStateReward' : {
-            modifyable : false,
-            typeSig : [['state', 'number'], 'stateReward'],
-            codeAsFunction : function(state, reward) {
-                return [state, reward];
-            }
-
-        },
-        'plus' : {
-            modifyable : false,
-            typeSig : [['number', 'number'], 'number'],
-            codeAsFunction : function(a, b) {
-                return a + b;
-            }
-
-        },
-        'minus' : {
-            modifyable : false,
-            typeSig : [['number', 'number'], 'number'],
-            codeAsFunction : function(a, b) {
-                return a - b;
-            }
-
-        },
-        'mul' : {
-            modifyable : false,
-            typeSig : [['number', 'number'], 'number'],
-            codeAsFunction : function(a, b) {
-                return a * b;
-            }
-
-        },
-        'gDiv' : {
-            modifyable : false,
-            typeSig : [['number', 'number'], 'number'],
-            codeAsFunction : function(a, b) {
-                return b === 0 ? 0 : a / b;
-            }
-
-        },
-        'sum' : {
-            modifyable : false,
-            typeSig : [['list'], 'number'],
-            codeAsFunction : function(arrayToSum) {
-                return arrayToSum.reduce(function(previousValue, currentValue, index, array) {
-                    return previousValue + currentValue;
-                });
-
-            }
-
-        },
-        'cons' : {
-            modifyable : false,
-            typeSig : [['number', 'number'], 'list'],
-            codeAsFunction : function(a, b) {
-                return [a, b];
-            }
-
-        },
-        'increment' : {
-            modifyable : false,
-            typeSig : [['number'], 'number'],
-            codeAsFunction : function(a) {
-                return a + 1;
-            }
-
-        },
-        'decrement' : {
-            modifyable : false,
-            typeSig : [['number'], 'number'],
-            codeAsFunction : function(a) {
-                return a - 1;
-            }
-
-        },
     }
 
     jQuery.extend(this.functions, stateQueries);
 
-    this.codeAsString = "";
-    this.__dirty = true;
-
+    this.getSize = function() {
+        return this.length;
+    }
+    
+    // Return all nodes (i.e. globally and locally available)
     this.getAllNodes = function(funcForLocals) {
         var allNodes = {};
         var localVariables = this.getLocalVariables(funcForLocals);
@@ -110,7 +45,7 @@ function Program(observedData, stateQueries) {
             }
         }
         return allNodes;
-    }
+    };
 
     // Makes (locally to this object) unique function name e.g. f1231
     this.makeGuid = function() {
@@ -119,9 +54,9 @@ function Program(observedData, stateQueries) {
             guid = 'f' + parseInt(Math.random() * 1000000);
         } while (guid in this.functions);
         return guid;
-    }
-
-
+    };
+    
+    // Compile all functions into native javascript code
     this.compileAll = function() {
         // If program has nulls in it, it is invalid
         try {
@@ -146,9 +81,9 @@ function Program(observedData, stateQueries) {
 
             }
         }
-    }
+    };
 
-    // Convert tree or list expression into compiled code
+    // Compile codeAsTree into executable function
     this.compileFunction = function(func) {
         if(this.functions[func]['__dirty'] === true) {
             this.functions[func]['codeAsString'] = this.processSymbols(this.functions[func]['codeAsTree']);
@@ -160,27 +95,30 @@ function Program(observedData, stateQueries) {
             this.functions[func]['codeAsFunction'] = new Function(localVariablesAsList, this.functions[func]['codeAsString']);
             this.functions[func]['__dirty'] = false;
             return this.functions[func]['codeAsFunction'];
-        } else {
-            console.log("not dirtty");
+        }
+        else {
             return this.functions[func]['codeAsFunction'];
         }
-    }
+    };
 
     // Is a node in codeAsTree a function or not?
     this.isSymbolFunction = function(symbol, isNullOk) {
         if(symbol === null) {
             if(isNullOk === true) {
                 return false;
-            } else {
+            }
+            else {
                 console.log("Null in tree");
                 // throw "nullInTree";
             }
-        } else if( typeof symbol === "object") {
+        }
+        else if( typeof symbol === "object") {
             return true;
-        } else {
+        }
+        else {
             return false;
         }
-    }
+    };
 
     // Reursively compile codeAsTree into codeAsString
     this.processSymbols = function(funcTree) {
@@ -195,7 +133,8 @@ function Program(observedData, stateQueries) {
 
             if(symbol === "returnNode") {
                 functionAsString += "return (";
-            } else {
+            }
+            else {
                 functionAsString += "functions." + symbol + ".codeAsFunction" + "(";
                 if(this.functions[symbol]['modifyable'] === true) {
                     // Need to pass functions object to modifyable objects
@@ -211,16 +150,19 @@ function Program(observedData, stateQueries) {
             }
             functionAsString += ")";
             return functionAsString;
-        } else {
-        	// is action
-        	if (funcTree === "main_a1") {
-        		return "functions['main_a1'].codeAsFunction(main_a0)";
-        	}
+        }
+        else {
+            // is action
+            if(funcTree === "main_a1") {
+                return "functions['main_a1'].codeAsFunction(main_a0)";
+            }
             return funcTree;
         }
-    }
-
-
+    };
+    
+    // Retreives local variables (i.e. arguments) given to a function
+    // Local variables are suffixed with _a for argument and then a number
+    // indicating their order in argument list
     this.getLocalVariables = function(func) {
         var localVariables = {};
         var typeSig = this.functions[func]['typeSig'][0];
@@ -230,7 +172,7 @@ function Program(observedData, stateQueries) {
             };
         }
         return localVariables;
-    }
+    };
 
     // Recurse through funcTree building filtered list
     this.treeFilter = function(funcTree, filterFunc, position) {
@@ -255,11 +197,11 @@ function Program(observedData, stateQueries) {
                 filteredPositions = filteredPositions.concat(this.treeFilter(funcTree[symbol][i], filterFunc, position.concat(i)));
             }
             return filteredPositions;
-        } else {
+        }
+        else {
             return [];
         }
-    }
-
+    };
 
     this.treeRecursiveDraw = function(funcTree, graph) {
         var filteredFuncs = [];
@@ -281,13 +223,14 @@ function Program(observedData, stateQueries) {
                 var childName = this.treeRecursiveDraw(funcTree[symbol][i], graph);
                 graph.addEdge(name, childName, st);
             }
-        } else {
+        }
+        else {
             graph.addNode(name, {
                 label : "" + funcTree //,
             });
         }
         return name;
-    }
+    };
 
     // Draw all the functions
     this.draw = function(index) {
@@ -314,21 +257,7 @@ function Program(observedData, stateQueries) {
                 i = i + 1;
             }
         }
-        redraw = function() {
-            layouter.layout();
-            renderer.draw();
-        };
-
-        hide = function(id) {
-            g.nodes[id].hide();
-        };
-
-        show = function(id) {
-            g.nodes[id].show();
-        };
-
-    }
-
+    };
 }
 
 // Actions	------------------- this is bound to program object.
@@ -339,7 +268,8 @@ var addBoundNode = function(program, child, parentFunc, parentPropertyTrace, ava
     if(childObj['typeSig'].length === 1) {
         // Am a variable
         parentSlot[availableSlotPos] = child;
-    } else if(childObj['typeSig'].length === 2) {
+    }
+    else if(childObj['typeSig'].length === 2) {
         // Am a function
         var numArgs = childObj['typeSig'][0].length;
         var nullArgs = [];
@@ -348,7 +278,8 @@ var addBoundNode = function(program, child, parentFunc, parentPropertyTrace, ava
         }
         parentSlot[availableSlotPos] = {};
         parentSlot[availableSlotPos][child] = nullArgs;
-    } else {
+    }
+    else {
         throw "typeSig length is wrong";
     }
     program.length += 1;
@@ -404,12 +335,13 @@ var sampleProgramAction = function(program) {
         }
 
         var parentFunc = stGetRandomElement(funcs);
-                if (parentFunc === 'main') {
-        	var alphabrea;
+        if(parentFunc === 'main') {
+            var alphabrea;
         }
         var codeAsTree = program.functions[parentFunc]['codeAsTree'];
 
-        // Recursively find all nodes within chosen function with empty slot ( null)
+        // Recursively find all nodes within chosen function with empty slot (
+        // null)
         var viableParents = program.treeFilter(codeAsTree, function(funcTree, symbol) {
             var numArguments = funcTree[symbol].length;
             var hasEmptySlot = false;
@@ -440,15 +372,15 @@ var sampleProgramAction = function(program) {
         var requiredType;
         if(parentObj === 'returnNode') {
             requiredType = program.functions[parentFunc]['typeSig'][1];
-        } else {
+        }
+        else {
             requiredType = program.functions[parentObj]['typeSig'][0][availableSlotPos];
         }
 
         var viableChildren = [];
         var allNodes = program.getAllNodes(parentFunc);
         for(var func in allNodes) {
-            if((allNodes[func]['typeSig'].length === 1 && allNodes[func]['typeSig'][0] === requiredType) || 
-            (allNodes[func]['typeSig'][1] === requiredType && allNodes[func]['placable'] !== false)) {
+            if((allNodes[func]['typeSig'].length === 1 && allNodes[func]['typeSig'][0] === requiredType) || (allNodes[func]['typeSig'][1] === requiredType && allNodes[func]['placable'] !== false)) {
                 viableChildren.push(func);
             }
         }
@@ -460,7 +392,8 @@ var sampleProgramAction = function(program) {
 
         var child = stGetRandomElement(viableChildren);
         return ['addBoundNode', [child, parentFunc, parentPropertyTrace, availableSlotPos]];
-    } else if(actionType === 'replace') {
+    }
+    else if(actionType === 'replace') {
         var viableFunctions = getConstrainedFunction(functionSet, function(lambda) {
             return (func.slotsAvailable > 0)
         });
@@ -470,9 +403,11 @@ var sampleProgramAction = function(program) {
     // match subtree in graph and replace subtree with function node,
     // add function node to set
     else if(actionType === 'lamdarise') {
-    } else if(actionType === 'doNothing') {
+    }
+    else if(actionType === 'doNothing') {
         return ['doNothing', []];
-    } else {
+    }
+    else {
         throw "Action " + actionType + " type not found";
     }
 }

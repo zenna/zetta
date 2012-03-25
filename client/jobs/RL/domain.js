@@ -1,15 +1,15 @@
 // Shall we stop moving?
 var canContinue = function(time, state) {
     return time < 1000 ? true : false;
-}
+};
 
 var getAgentPosition = function(state) {
     return [state[2], state[3]];
-}
+};
 
 var getWorldSize = function(state) {
     return [state[0], state[1]];
-}
+};
 
 // Agent is outside board bounds
 var isInvalidPos = function(position, worldSize) {
@@ -19,7 +19,7 @@ var isInvalidPos = function(position, worldSize) {
     else {
         return false;
     }
-}
+};
 
 // Is the agent on the perimiter of the world
 var isOnPerimeter = function(position, worldSize) {
@@ -29,7 +29,7 @@ var isOnPerimeter = function(position, worldSize) {
     else {
         return false;
     }
-}
+};
 
 // (Arbitrary) relatively more complex reward model
 var isMod3 = function(position, worldSize) {
@@ -39,12 +39,12 @@ var isMod3 = function(position, worldSize) {
     else {
         return false;
     }
-}
+};
 
 // Generate new state (4-tuple) from x,y positions and old state
 var updateStatePosition = function(oldState, position) {
     return [oldState[0], oldState[1], position[0], position[1]];
-}
+};
 
 // So let's say we plonk into the program, the current action
 // Connected to it would be the state, stateQueries and any arguments

@@ -5,7 +5,7 @@ var selectPosteriorModel = function(observedData, numSamples, stateQueries) {
 // Log length Prior
 var computeLogPrior = function(program) {
     var alpha = 1;
-    return -alpha * program.length;
+    return -alpha * program.getSize();
 }
 
 var computeLogPosterior = function(program, observedData, numSamples) {

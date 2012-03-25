@@ -37,7 +37,10 @@ $('document').ready(function() {
     var a = new Infon([0]);
     a.types.push('arg');
     var b = new Infon([0]);
-    findConcat(drawWinners);
+    // findConcat(drawWinners);
+    // findAddOne(drawWinners);
+    findIdentity(4, drawWinners);
+
     //
     // var initialState = createInitialState(64, 64, 5, 5);
     // var world = new perimeterWorld(initialState);

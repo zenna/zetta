@@ -61,7 +61,8 @@ var decToBitString = function(decimal, length) {
         }
     }
     if( typeof length !== "undefined" && length > bitString.length) {
-        for(var i = 0; i < length - bitString.length; ++i) {
+        var lengthDebt = length - bitString.length;
+        for(var i = 0; i < lengthDebt; ++i) {
             bitString.unshift(0);
         }
     }
@@ -220,9 +221,11 @@ var concatenateEdgesToBitString = function(space, currentInfon, edgeType) {
     return bitString;
 }
 
+success = 0;
+fail = 0;
 var createRandomEdges = function(space, virtualEdgeProb, applyEdgeProb) {
     var numInfons = space.getNumInfons();
-    
+
     // Create virtual edges first
     for(var i = 0; i < numInfons; ++i) {
         var locus = space.getInfonFromId(i);
@@ -243,7 +246,7 @@ var createRandomEdges = function(space, virtualEdgeProb, applyEdgeProb) {
 
             var inputBitsRemaining = numBitsInput;
             var neighbourIds = [], numTries = 1000;
-            for(var j = 0; j < numTries; ++j) {
+            for(var j = 0; j < numTries && inputBitsRemaining !== 0; ++j) {
                 var randomInfonId = Math.floor(Math.random() * space.getNumInfons());
                 var randomInfon = space.getInfonFromId(randomInfonId);
                 if(randomInfon.getLength() <= inputBitsRemaining) {
@@ -253,13 +256,16 @@ var createRandomEdges = function(space, virtualEdgeProb, applyEdgeProb) {
             }
 
             if(inputBitsRemaining === 0) {
+                success += 1;
                 for(var j = 0; j < neighbourIds.length; ++j) {
                     space.addEdgeFromId(i, neighbourIds[j], edgeType);
 
                 }
             }
             else {
-                console.log("could not find suitable neighbours")
+                fail += 1;
+                // console.log("could not find suitable neighbours",
+                // inputBitsRemaining, " remain");
             }
         }
     }
@@ -328,7 +334,8 @@ var spaceDraw = function(space, parent) {
     });
 
     var circle = svg.append("svg:g").selectAll("circle").data(force.nodes()).enter().append("svg:circle").attr("r", function(d) {
-        return 6;// * space.getInfonFromId(d.id).getLength();
+        return 6;
+        // * space.getInfonFromId(d.id).getLength();
     }).style("fill", function(d) {
         if(d.types.indexOf('arg') != -1 && d.types.indexOf('output') != -1) {
             return "green";

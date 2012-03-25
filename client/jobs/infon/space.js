@@ -86,8 +86,8 @@ var handleApplyEdge = function(space, currentInfon, body, predecessors) {
         }
         currentInfon.tempBody = hokum(bitString, body, currentInfon.getLength());
         toUpdate.push(currentInfon.id);
-        
-        if (currentInfon.tempBody.length != currentInfon.getCurrentBody().length) {
+
+        if(currentInfon.tempBody.length != currentInfon.getCurrentBody().length) {
             throw "WHAA";
         }
     }
@@ -111,16 +111,21 @@ var doStep = function(space) {
         if(inArray(currentInfon.types, 'action')) {
             currentInfon.actionFunc(currentInfon.getCurrentBody());
         }
-        if('virtualToTarget' in edgeTypeToSource) {
-            var sourceInfonId = edgeTypeToSource.virtualToTarget[0];
-            var sourceInfon = space.getInfonFromId(sourceInfonId);
-            var inputId = space.getPredecessors(sourceInfon, 'virtualFromSource')[0].sourceId;
-            var inputBitString = space.getInfonFromId(inputId).getCurrentBody();
-            var output = hokum(sourceInfon.getCurrentBody(), inputBitString, currentInfon.getLength());
-            currentInfon.tempBody = output;
-            toUpdate.push(i);
-            body = output;
-        }
+        // if('virtualToTarget' in edgeTypeToSource) {
+        // var sourceInfonId = edgeTypeToSource.virtualToTarget[0];
+        // var sourceInfon = space.getInfonFromId(sourceInfonId);
+        // var inputId = space.getPredecessors(sourceInfon,
+        // 'virtualFromSource')[0].sourceId;
+        // var inputBitString = space.getInfonFromId(inputId).getCurrentBody();
+        // var output = hokum(sourceInfon.getCurrentBody(), inputBitString,
+        // currentInfon.getLength());
+        // currentInfon.tempBody = output;
+        // toUpdate.push(i);
+        // body = output;
+        // if (currentInfon.getLength() != currentInfon.tempBody.length) {
+        // throw "WOWZA";
+        // }
+        // }
         if('virtualFromSource' in edgeTypeToSource) {
             if(edgeTypeToSource['apply'] !== undefined) {
                 var toUpdateFromApply = handleApplyEdge(space, currentInfon, body, edgeTypeToSource['apply']);
@@ -128,7 +133,6 @@ var doStep = function(space) {
             }
         }
         if('apply' in edgeTypeToSource) {
-            // console.log('apply');
             var toUpdateFromApply = handleApplyEdge(space, currentInfon, body, edgeTypeToSource['apply']);
             toUpdate = toUpdate.concat(toUpdateFromApply);
         }

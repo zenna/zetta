@@ -14,6 +14,15 @@ var findAnd = function(successCallback) {
         return myValue[0] === (args[1][0] ^ args[0][0]) ? [1] : [0];
     }
 
+    // simulateAndDrawSpace(space);
+    console.log(assessSpaceSlow(space));
+    var winners = optimiseRandomly(funcArgLengths, [andOut], [funcOutLengths], range(1, 4), range(1, 9), score, successCallback);
+};
+
+var findAddOne = function(successCallback) {
+    var negateArgLength = 2;
+    var funcOutLengths = 2;
+
     var a = new Infon([0]);
     a.types.push('arg');
     var b = new Infon([0]);
@@ -26,29 +35,13 @@ var findAnd = function(successCallback) {
     space.addInfon(a);
     space.addInfon(b);
     space.addInfon(c);
-    space.addInfon(d);
-    space.addEdge(b, b, 'apply');
-
-    space.addEdge(b, a, 'apply');
-    space.addEdge(c, b, 'apply');
-    space.addEdge(c, b, 'apply');
-
-    addVirtualEdge(space, d, c, function(length) {
+    addVirtualEdge(space, b, a, function(length) {
         return [1, 0]
     });
 
-    // simulateAndDrawSpace(space);
-    console.log(assessSpaceSlow(space));
-    var winners = optimiseRandomly(funcArgLengths, [andOut], [funcOutLengths], range(1, 4), range(1, 9), score, successCallback);
-};
-
-var findAddOne = function() {
-    var negateArgLength = 2;
-    var funcOutLengths = 2;
-
     var negateOut = function(myValue, args) {
         var added = incrementBitString(args[0]);
-        if(bitStringToDec(added) === bitStringToDec(myValue[0])) {
+        if(bitStringToDec(added) === bitStringToDec(myValue)) {
             return [1];
         }
         else {
@@ -57,7 +50,7 @@ var findAddOne = function() {
     }
 
     score = 4;
-    var winners = optimiseRandomly([negateArgLength], [negateOut], [funcOutLengths], range(3, 4), range(3, 4), score);
+    var winners = optimiseRandomly([negateArgLength], [negateOut], [funcOutLengths], range(1, 5), range(1, 5), score, successCallback);
 }
 
 var findConcat = function(successCallback) {
@@ -75,7 +68,7 @@ var findConcat = function(successCallback) {
     }
 
     score = 4;
-    optimiseRandomly([1, 1], [negateOut], [2], range(1, 4), range(0, 4), score,successCallback);
+    optimiseRandomly([1, 1], [negateOut], [2], range(1, 4), range(0, 4), score, successCallback);
 }
 
 var findNot = function(successCallback) {
@@ -88,4 +81,17 @@ var findNot = function(successCallback) {
     }
 
     optimiseRandomly(argLengths, [fitnessFunc], outputLengths, range(1, 5), range(0, 5), scoreGoal, successCallback);
+}
+
+var findIdentity = function(n, successCallback) {
+    var argLengths = [n];
+    var outputLengths = [n];
+    var scoreGoal = Math.pow(2, sumArray(argLengths));
+
+    var fitnessFunc = function(myValue, args) {
+        return arraysEqual(myValue, args[0]) ? [1] : [0];
+    }
+
+    optimiseRandomly(argLengths, [fitnessFunc], outputLengths, range(1, 5), range(0, 5), scoreGoal, successCallback);
+    
 }

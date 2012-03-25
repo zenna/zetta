@@ -26,12 +26,6 @@ var weightedSample = function(weightedArray) {
     throw "Return not reached as index not found"
 }
 
-// TODO - make this do as intended
-var getRandomElement = function(list, erp, erpParams) {
-    return list[randInteger(0, list.length)];
-};
-
-
 // Turn a normal ERP into a stateful one
 var makeErpStateful = function(erp, erpType) {
     return function() {
@@ -116,17 +110,6 @@ var stGetRandomFilteredElementIndex = function(list, filterFunc) {
     }
     return stGetRandomElement(tempList);
 };
-
-var poissionRnd = function(lambda) {
-    var L = Math.exp(-lambda);
-    var k = 0;
-    var p = 1;
-    do {
-        k = k + 1;
-        p = p * Math.random();
-    } while (p > L);
-    return k - 1;
-}
 
 var getProposal = function(erpType) {
     var typeToProposal = {
