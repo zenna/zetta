@@ -172,8 +172,8 @@ var createRandomSpaceWithDomain = function(actions, observations, maxSize, numIn
     return space;
 };
 
-var simulateAndDrawSpace = function(space) {
-    var canvas = new spaceDraw(space, '#candidates');
+var simulateAndDrawSpace = function(space, width, height) {
+    var canvas = new spaceDraw(space, '#candidates', width, height);
 }
 
 // Converts space into d3 style graph for visual\alisation
@@ -316,11 +316,10 @@ var runSimulation = function(space, canvas) {
 }
 
 // From an infonic space return a edgelist graph, useful for visualisation
-var spaceDraw = function(space, parent) {
+var spaceDraw = function(space, parent, w, h) {
     var self = this;
     var graph = spaceToGraph(space);
-    var w = 200, h = 200;
-    var force = d3.layout.force().nodes(d3.values(graph.nodes)).links(graph.links).size([w, h]).linkDistance(60).charge(-300).on("tick", tick).start();
+    var force = d3.layout.force().nodes(d3.values(graph.nodes)).links(graph.links).size([w, h]).linkDistance(120).charge(-300).on("tick", tick).start();
 
     var svg = d3.select(parent).append("svg:svg").attr("width", w).attr("height", h);
 
@@ -426,7 +425,7 @@ var spaceDraw = function(space, parent) {
                 text.selectAll('text').text(function(d) {
                     var infon = space.getInfonFromId(d.index);
                     var string = d.index + "-c:" + infon.getCurrentBody().join("") + " p:" + infon.getPermBody().join("");
-                    string += " f:" + concatenateEdgesToBitString(space, infon, 'apply').join("");
+                    // string += " f:" + concatenateEdgesToBitString(space, infon, 'apply').join("");
                     return string;
                 });
 

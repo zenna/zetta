@@ -13,6 +13,12 @@
         <script type='text/javascript' src="../RL/domain.js"></script>
         <script type='text/javascript' src="../RL/scalers.js"></script>
         <script type='text/javascript' src="../RL/color_map.js"></script>
+        <script type='text/javascript' src="../../../../curiosity/static-root/static/js/include/Box2D.js"></script>
+        <script type='text/javascript' src="../../../../curiosity/static-root/static/js/data.js"></script>
+        <script type='text/javascript' src="../../../../curiosity/static-root/static/js/io.js"></script>
+        <script type='text/javascript' src="../../../../curiosity/static-root/static/js/physics.js"></script>
+        <script type='text/javascript' src="../../../../curiosity/static-root/static/js/physicsBase.js"></script>
+        <script type='text/javascript' src="../../../../curiosity/static-root/static/js/simulation.js"></script>
         <script type='text/javascript' src="standalone.js"></script>
         <style type="text/css">
             path.link {
@@ -27,8 +33,7 @@
                 stroke-dasharray: 0, 2 1;
             }
             path.link.replace {
-                stroke: green
-                stroke-dasharray: 0, 2 1;
+                stroke: green stroke-dasharray : 0, 2 1;
             }
             circle {
                 fill: #ccc;
@@ -49,6 +54,6 @@
     </head>
     <body>
         <div id="candidates"></div>
-        <canvas id="board"></canvas>
+<!--         <canvas id="board"></canvas> -->
     </body>
 </html>

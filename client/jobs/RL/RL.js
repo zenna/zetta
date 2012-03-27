@@ -22,8 +22,19 @@
 // TOOD: Learning RL framework, simulated annealing
 // RL - either likelihood or how good it was before
 
-// TODO: 1. try out new infon models
-// TODO: 2. develop interface for infons/jsChurch/link to 'world'
+/*
+ * Infon is struggling with more complex functions, this could be 1. because representation is poor or insufficient
+ * or 2. search algorithm is poor.
+ * 
+ * I need to plug back into jsChurch programs
+ * 1. Implemeent higher order fucntion in jsChurch programs
+ * 2. Integrate physical world into RL
+ * 3. Implement sparse Samplong in jsChurch
+ * 4. Learn jsChurch/infon models/ sparse sampling
+ *  
+ * 4. 
+ */
+
 // TODO 3. allow higher order functions in RlProgram Model
 // TODO 4. Implement sparse sampling in actual i) jsChurch and possibly other MoCs
 // TODO: Figure out scoring of models
