@@ -11,11 +11,11 @@ var findAnd = function(successCallback) {
     var funcOutLengths = 1;
     score = 4;
     var andOut = function(myValue, args) {
-        return myValue[0] === (args[1][0] ^ args[0][0]) ? [1] : [0];
+        return myValue[0] === (args[1][0] && args[0][0]) ? [1] : [0];
     }
 
     // simulateAndDrawSpace(space);
-    console.log(assessSpaceSlow(space));
+    // console.log(assessSpaceSlow(space));
     var winners = optimiseRandomly(funcArgLengths, [andOut], [funcOutLengths], range(1, 4), range(1, 9), score, successCallback);
 };
 

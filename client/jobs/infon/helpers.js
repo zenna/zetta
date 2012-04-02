@@ -177,7 +177,7 @@ var simulateAndDrawSpace = function(space, width, height) {
 }
 
 // Converts space into d3 style graph for visual\alisation
-var spaceToGraph = function(space) {
+var spaceToGraph = function(space, onlyUniqueEdges) {
     var nodes = [];
     var links = [];
 
@@ -191,13 +191,17 @@ var spaceToGraph = function(space) {
         });
 
         var outInfons = space.getOutInfonsFromId(i);
+        var seenNeighbours = [];
         for(var j = 0; j < outInfons.length; ++j) {
-            links.push({
-                source : outInfons[j].sourceId,
-                target : currentInfon.id,
-                value : 1,
-                type : outInfons[j].edgeType
-            })
+            if(!inArray(seenNeighbours, outInfons[j].sourceId)) {
+                links.push({
+                    source : outInfons[j].sourceId,
+                    target : currentInfon.id,
+                    value : 1,
+                    type : outInfons[j].edgeType
+                });
+            }
+            seenNeighbours.push(outInfons[j].sourceId);
         }
     }
 
@@ -293,7 +297,8 @@ var hokum = function(func, argument, n) {
 
 var runSimulation = function(space, canvas) {
     if(space.simulating === false) {
-        space.simulating = true; (function loopy() {
+        space.simulating = true;
+        (function loopy() {
             if(canvas) {
                 canvas.update();
             }
@@ -304,6 +309,8 @@ var runSimulation = function(space, canvas) {
             else {
                 numChanges = 1;
             }
+
+            console.log(numChanges);
 
             if(numChanges > 0) {
                 setTimeout(loopy, 1000);
@@ -318,90 +325,98 @@ var runSimulation = function(space, canvas) {
 // From an infonic space return a edgelist graph, useful for visualisation
 var spaceDraw = function(space, parent, w, h) {
     var self = this;
-    var graph = spaceToGraph(space);
-    var force = d3.layout.force().nodes(d3.values(graph.nodes)).links(graph.links).size([w, h]).linkDistance(120).charge(-300).on("tick", tick).start();
-
-    var svg = d3.select(parent).append("svg:svg").attr("width", w).attr("height", h);
-
-    // Per-type markers, as they don't inherit styles.
-    svg.append("svg:defs").selectAll("marker").data(["apply", "virtualToTarget", "virtualFromSource"]).enter().append("svg:marker").attr("id", String).attr("viewBox", "0 -5 10 10").attr("refX", 15).attr("refY", -1.5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("svg:path").attr("d", "M0,-5L10,0L0,5");
-
-    var path = svg.append("svg:g").selectAll("path").data(force.links()).enter().append("svg:path").attr("class", function(d) {
-        return "link " + d.type;
-    }).attr("marker-end", function(d) {
-        return "url(#" + d.type + ")";
-    });
-
-    var circle = svg.append("svg:g").selectAll("circle").data(force.nodes()).enter().append("svg:circle").attr("r", function(d) {
-        return 6;
-        // * space.getInfonFromId(d.id).getLength();
-    }).style("fill", function(d) {
-        if(d.types.indexOf('arg') != -1 && d.types.indexOf('output') != -1) {
-            return "green";
-        }
-        else if(d.types.indexOf('arg') !== -1) {
-            return "blue"
-        }
-        else if(d.types.indexOf('output') !== -1) {
-            return "red";
-        }
-        else if(d.types.indexOf('perhipheral') != -1) {
-            return "pink";
-        }
-        else if(d.types.indexOf('action') != -1) {
-            return "yellow";
-        }
-        else if(d.types.indexOf('virtual') != -1) {
-            return "orange";
-        }
-        else {
-            return "grey";
-        }
-    }).on("click", function(d) {
-        var infon = space.getInfonFromId(d.id);
-        var body;
-        if(event.button === 0) {
-            body = infon.getPermBody();
-        }
-        else if(event.button === 1) {
-            body = infon.getCurrentBody();
-        }
-        var decPermBody = bitStringToDec(body);
-        var newBody;
-        if(Math.pow(2, body.length) - 1 === decPermBody) {
-            newBody = zeroBitString(body.length);
-        }
-        else {
-            newBody = decToBitString(++decPermBody, body.length);
-        }
-
-        if(event.button === 0) {
-            infon.updatePermBody(newBody);
-
-        }
-        else if(event.button === 1) {
-            infon.updateCurrentBodyDirectly(newBody);
-
-        }
-        runSimulation(space, self);
-
-    }).call(force.drag);
-
-    var text = svg.append("svg:g").selectAll("g").data(force.nodes()).enter().append("svg:g");
-
-    // A copy of the text with a thick white stroke for legibility.
-
-    text.append("svg:text").attr("x", 8).attr("y", ".31em").attr("class", "shadow").text(function(d) {
-        return "";
-    });
+    var graph = spaceToGraph(space, true);
+    var force = d3.layout.force().nodes(d3.values(graph.nodes)).links(graph.links).theta(0.95).size([w, h]).linkDistance(120).charge(-300);
+    var path, circle, text;
+    this.forceInit = function() {
+        force.start();
+    }
 
 
-    text.append("svg:text").attr("x", 8).attr("y", ".31em").text(function(d) {
-        return "";
-    });
+    this.drawInit = function() {
+        var svg = d3.select(parent).append("svg:svg").attr("width", w).attr("height", h);
+
+        // Per-type markers, as they don't inherit styles.
+        svg.append("svg:defs").selectAll("marker").data(["apply", "virtualToTarget", "virtualFromSource"]).enter().append("svg:marker").attr("id", String).attr("viewBox", "0 -5 10 10").attr("refX", 15).attr("refY", -1.5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("svg:path").attr("d", "M0,-5L10,0L0,5");
+        path = svg.append("svg:g").selectAll("path").data(force.links()).enter().append("svg:path").attr("class", function(d) {
+            return "link " + d.type;
+        }).attr("marker-end", function(d) {
+            return "url(#" + d.type + ")";
+        });
+
+        circle = svg.append("svg:g").selectAll("circle").data(force.nodes()).enter().append("svg:circle").attr("r", function(d) {
+            return 6;
+            // * space.getInfonFromId(d.id).getLength();
+        }).style("fill", function(d) {
+            if(d.types.indexOf('arg') != -1 && d.types.indexOf('output') != -1) {
+                return "green";
+            }
+            else if(d.types.indexOf('arg') !== -1) {
+                return "blue"
+            }
+            else if(d.types.indexOf('output') !== -1) {
+                return "red";
+            }
+            else if(d.types.indexOf('perhipheral') != -1) {
+                return "pink";
+            }
+            else if(d.types.indexOf('action') != -1) {
+                return "yellow";
+            }
+            else if(d.types.indexOf('virtual') != -1) {
+                return "orange";
+            }
+            else {
+                return "grey";
+            }
+        }).on("click", function(d) {
+            var infon = space.getInfonFromId(d.id);
+            var body;
+            if(event.button === 0) {
+                body = infon.getPermBody();
+            }
+            else if(event.button === 1) {
+                body = infon.getCurrentBody();
+            }
+            var decPermBody = bitStringToDec(body);
+            var newBody;
+            if(Math.pow(2, body.length) - 1 === decPermBody) {
+                newBody = zeroBitString(body.length);
+            }
+            else {
+                newBody = decToBitString(++decPermBody, body.length);
+            }
+
+            if(event.button === 0) {
+                infon.updatePermBody(newBody);
+
+            }
+            else if(event.button === 1) {
+                infon.updateCurrentBodyDirectly(newBody);
+
+            }
+            runSimulation(space, self);
+
+        }).call(force.drag);
+        text = svg.append("svg:g").selectAll("g").data(force.nodes()).enter().append("svg:g");
+
+        // A copy of the text with a thick white stroke for legibility.
+
+        text.append("svg:text").attr("x", 8).attr("y", ".31em").attr("class", "shadow").text(function(d) {
+            return "";
+        });
+
+
+        text.append("svg:text").attr("x", 8).attr("y", ".31em").text(function(d) {
+            return "";
+        });
+
+
+        force.on("tick", tick);
+    }
 
     // Use elliptical arc path segments to doubly-encode directionality.
-    function tick() {
+    var tick = function() {
         path.attr("d", function(d) {
             var dx = d.target.x - d.source.x, dy = d.target.y - d.source.y, dr = Math.sqrt(dx * dx + dy * dy);
             return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
@@ -419,13 +434,14 @@ var spaceDraw = function(space, parent, w, h) {
 
     }
 
-
+    // Update text on all infons
     this.update = function() {
         for(var i = 0; i < space.getNumInfons(); ++i) {(function(index) {
                 text.selectAll('text').text(function(d) {
                     var infon = space.getInfonFromId(d.index);
                     var string = d.index + "-c:" + infon.getCurrentBody().join("") + " p:" + infon.getPermBody().join("");
-                    // string += " f:" + concatenateEdgesToBitString(space, infon, 'apply').join("");
+                    // string += " f:" + concatenateEdgesToBitString(space,
+                    // infon, 'apply').join("");
                     return string;
                 });
 
@@ -433,6 +449,4 @@ var spaceDraw = function(space, parent, w, h) {
         }
     }
 
-
-    this.update();
 };

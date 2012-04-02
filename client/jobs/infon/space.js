@@ -1,62 +1,133 @@
 var Space = function() {
-    this.infons = [];
-    this.edges = [];
+    var infons = [];
+    var edges = [];
+    // Map from infon -> incoming edges
+    var reverseEdges = [];
+    var modulesAreDirty = false;
+    var moduleIdToInfonIds = {};
+    var infonIdToModuleId = [];
+    var unusedModuleIds = [];
+
+    // When two infons are connected, their modules must combine
+    // When an edge is disconnected, the modules may at most double
+
     this.simulating = false;
 
+    this.getInfonsFromModuleId = function(moduleId) {
+        return moleculesToInfons[infonId];
+    }
+
     this.addInfon = function(infon) {
-        infon.id = this.infons.length;
-        this.infons.push(infon);
-        this.edges.push([]);
+        infon.id = infons.length;
+        infons.push(infon);
+        edges.push([]);
+        infonIdToModuleId[infon.id] = infon.id;
+        moduleIdToInfonIds[infon.id].push([infon.id]);
         return infon.id;
     };
-
+    // Reassigns all infons in oldModule to newModule
+    var updateSet = function(newModuleId, oldModuleId) {
+        var infonsToReassign = moduleIdToInfonIds[oldModuleId];
+        for(var i = 0; i < infonsToReassign.length; ++i) {
+            infonIdToModuleId[infonsToReassign[i]] = newModuleId;
+            moduleIdToInfonIds[newModuleId].push(infonsToReassign[i]);
+        }
+        delete moduleIdToInfonIds[oldModuleId];
+        unusedModuleIds.push(oldModuleId);
+    };
+    
+    var assignInfonsToModule = function(infonIds, moduleId) {
+        for (var i=0; i<infonIds.length; ++i) {
+            infonIdToModuleId[infonIds[i]] = moduleId;
+        }
+    };
+    
+    var getNewModuleId = function() {
+        if (unusedModuleIds.length > 0) {
+            return unusedModuleIds.slice(0,0);
+        }
+        else {
+            throw "houston we have a problem with new module Ids";
+        }
+    }
 
     this.addEdge = function(targetInfon, sourceInfon, edgeType) {
-        this.edges[targetInfon.id].push({
+        edges[targetInfon.id].push({
+            targetId : targetInfon.id,
             sourceId : sourceInfon.id,
             edgeType : edgeType
         });
+        reverseEdges[source.id].push({
+            targetId : sourceInfon.id,
+            sourceId : targetInfon.id,
+            edgeType : edgeType
+        });
+        updateSet(infonIdToModuleId[targetInfon], infonIdToModuleId[sourceInfon]);
     };
-
 
     this.addEdgeFromId = function(infonAId, infonBId, edgeType) {
         this.addEdge(this.getInfonFromId(infonAId), this.getInfonFromId(infonBId), edgeType);
     };
 
+    this.removeEdge = function(edge) {
+        var incomingEdges = edges[edge.targetId];
+        // TODO don't create function within a loop, as below may be'
+        var index = indexOfFilteredList(incomingEdges, function(val) {
+            return val.sourceId === edge.sourceId && val.targetId === edge.targetId && val.edgeType === edge.edgeType;
+        });
+        edges.splice(index, index);
+        var outgoingEdges = reverseEdges[edge.sourceId];
+        index = indexOfFilteredList(outgoingEdges, function(val) {
+            return val.sourceId === edge.targetId && val.targetId === edge.sourceId && val.edgeType === edge.edgeType;
+        });
+        reverseEdges.splice(index, index);
+        modulesAreDirty = true;
 
-    this.numOutEdgesFromId = function(infonId) {
-        return this.edges[infonId].length;
+        var moduleA = getConnectedComponents(this, infonA);
+        var moduleB = getConnectedComponents(this, infonB);
+
+        if(arraysEqual(moduleA, moduleB)) {
+            assignInfonsToModule(moduleA, getNewModuleId());
+        }
+        else {
+            assignInfonsToModule(moduleA, getNewModuleId());
+            assignInfonsToModule(moduleB, getNewModuleId());
+        }
     };
 
+    this.numOutEdgesFromId = function(infonId) {
+        return edges[infonId].length;
+    };
 
     this.getPredecessors = function(targetInfon, edgeType) {
         return this.getOutInfonsFromId(targetInfon.id, edgeType)
-    }
-
+    };
 
     this.getOutInfonsFromId = function(infonId, edgeType) {
-        var allEdges = this.edges[infonId];
-
-        if(allEdges === undefined) {
-            var alpha;
-        }
-
+        var allEdges = edges[infonId];
         return typeof edgeType === "undefined" ? allEdges : allEdges.filter(function(element, index, array) {
             return element.edgeType === edgeType;
         });
-
     };
 
+    this.getAdjacentInfonsFromId = function(infonId, edgeType) {
+        var allEdges = reverseEdges[infonId].concat(allEdges[infonId]);
+        return typeof edgeType === "undefined" ? allEdges : allEdges.filter(function(element, index, array) {
+            return element.edgeType === edgeType;
+        });
+    };
 
     this.getNumInfons = function() {
-        return this.infons.length;
+        return infons.length;
     };
-
+    // Alias function to make compatable with simulated annealing optimisation.
+    this.getSize = function() {
+        return this.getNumInfons();
+    };
 
     this.getInfonFromId = function(infonId) {
-        return this.infons[infonId];
+        return infons[infonId];
     };
-
     // Needs updating for multiple edge types
     // this.appendSpace = function(space) {
     // var idMapping = {};
@@ -74,8 +145,7 @@ var Space = function() {
     // }
     // return idMapping;
     // }
-}
-
+};
 var handleApplyEdge = function(space, currentInfon, body, predecessors) {
     var toUpdate = [];
     if(predecessors.length > 0) {
@@ -92,8 +162,7 @@ var handleApplyEdge = function(space, currentInfon, body, predecessors) {
         }
     }
     return toUpdate;
-}
-
+};
 // Simulation step
 var doStep = function(space) {
     var toUpdate = [];
@@ -105,7 +174,6 @@ var doStep = function(space) {
         }, function(element) {
             return element.sourceId
         });
-
         var body = currentInfon.getCurrentBody();
 
         if(inArray(currentInfon.types, 'action')) {
@@ -179,8 +247,7 @@ var doStep = function(space) {
         currentInfon.updateCurrentBody(currentInfon.tempBody);
     }
     return actuallyUpdated;
-}
-
+};
 // Step until space is stable or maxSteps reached
 var stepUntilStable = function(space) {
     var step;
@@ -198,4 +265,16 @@ var stepUntilStable = function(space) {
     }
     var stable = numChanged === 0 ? true : false;
     return [stable, step];
+};
+var getConnectedComponents = function(space, infonId) {
+    var seen = [];
+    var components = []; (function componentLoop(infonId, seen) {
+        seen.push(infonId);
+        var neighbours = space.getAdjacentInfonsFromId(infon.id);
+        for(var i = 0; i < neighbours.length; ++i) {
+            if(!(inArray(neighbours, neighbours[i].sourceId))) {
+                componentLoop(neighbours[i].sourceId, seen);
+            }
+        }
+    })(infonId, seen);
 };
