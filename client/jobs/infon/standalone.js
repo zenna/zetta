@@ -121,5 +121,6 @@ var findFunction = function(func) {
 
 
 $('document').ready(function() {
-    linkInfonPhysicsWorld();
+    // linkInfonPhysicsWorld();
+    optimiseSomething();
 });

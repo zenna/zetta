@@ -190,7 +190,7 @@ var spaceToGraph = function(space, onlyUniqueEdges) {
             types : currentInfon.types
         });
 
-        var outInfons = space.getOutInfonsFromId(i);
+        var outInfons = space.getPredecessorsFromId(i);
         var seenNeighbours = [];
         for(var j = 0; j < outInfons.length; ++j) {
             if(!inArray(seenNeighbours, outInfons[j].sourceId)) {
@@ -214,7 +214,7 @@ var spaceToGraph = function(space, onlyUniqueEdges) {
 
 // Find all direct predecessors, and concatenate their string
 var concatenateEdgesToBitString = function(space, currentInfon, edgeType) {
-    var outInfonIds = space.getOutInfonsFromId(currentInfon.id, edgeType);
+    var outInfonIds = space.getPredecessorsFromId(currentInfon.id, edgeType);
     var bitString = [];
     if(outInfonIds.length > 0) {
         for(var j = 0; j < outInfonIds.length; ++j) {
@@ -225,8 +225,6 @@ var concatenateEdgesToBitString = function(space, currentInfon, edgeType) {
     return bitString;
 }
 
-success = 0;
-fail = 0;
 var createRandomEdges = function(space, virtualEdgeProb, applyEdgeProb) {
     var numInfons = space.getNumInfons();
 
@@ -260,16 +258,10 @@ var createRandomEdges = function(space, virtualEdgeProb, applyEdgeProb) {
             }
 
             if(inputBitsRemaining === 0) {
-                success += 1;
                 for(var j = 0; j < neighbourIds.length; ++j) {
                     space.addEdgeFromId(i, neighbourIds[j], edgeType);
 
                 }
-            }
-            else {
-                fail += 1;
-                // console.log("could not find suitable neighbours",
-                // inputBitsRemaining, " remain");
             }
         }
     }

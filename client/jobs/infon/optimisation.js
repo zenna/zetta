@@ -73,17 +73,17 @@ var optimiseRandomly = function(argLengths, funcOuts, outLengths, infonSizeRange
 var createSpaceFromBasicFuncs = function(basicFuncs) {
     var space = new Space();    
     for(var i = 0; i < basicFuncs.length; ++i) {
-        for(var j = 0; j < basicFuncs[i].inputLengths; ++j) {
+        for(var j = 0; j < basicFuncs[i].inputLengths.length; ++j) {
             var infon = new Infon(zeroBitString(basicFuncs[i].inputLengths[j]));
             infon.types.push('input');
             space.addInfon(infon);
         }
-        space.addCallOnSpec(basicFuncs[i].inputFuncs);
+        // space.addCallOnSpec(basicFuncs[i].inputFuncs);
 
-        for(var j = 0; j < basicFuncs[i].outputLengths; ++j) {
+        for(var j = 0; j < basicFuncs[i].outputLengths.length; ++j) {
             var infon = new Infon(zeroBitString(basicFuncs[i].outputLengths[j]));
             infon.types.push('output');
-            infon.outputFunc = basicFuncs[i].outputFunc[j];
+            infon.outputFunc = basicFuncs[i].outputFuncs[j];
             space.addInfon(infon);
         }
     }
@@ -91,21 +91,21 @@ var createSpaceFromBasicFuncs = function(basicFuncs) {
 };
 
 var initialiseSpace = function(basicFuncs,  initialModules, infonSizeRange, numInfons) {
-    var universe = createSpaceFromBasicFuncs(basicFuncs);
-    for(var i = 0; i < initialMolcules.length; ++i) {
-        universe.appendSpace( initialModules);
+    var space = createSpaceFromBasicFuncs(basicFuncs);
+    for(var i = 0; i < initialModules.length; ++i) {
+        space.appendSpace( initialModules);
     };
 
     // Create extra space to fill quota of infons
     var extraSpace = new Space();
-    var sizeDebt = numInfons - universe.getNumInfons();
+    var sizeDebt = numInfons - space.getNumInfons();
     for(var i = 0; i < sizeDebt; ++i) {
         var randomInfon = createRandomInfon(getRandomElement(infonSizeRange));
-        space.addInfon(randomInfon);
+        extraSpace.addInfon(randomInfon);
     }
     createRandomEdges(extraSpace, 0.5, 0.5);
-    universe.appendSpace(extraSpace);
-    return universe;
+    space.appendSpace(extraSpace);
+    return space;
 };
 
 var optimiseSimulatedAnnealing = function(basicFuncs, initialModules, infonSizeRange, numInfons, successCallback) {
@@ -119,8 +119,8 @@ var optimiseSimulatedAnnealing = function(basicFuncs, initialModules, infonSizeR
             // Temperature varies sinusoidally between tempMax and tempMin
             var temperature = Math.cos(j / stepsPerCycle * Math.PI * 2);
             temperature = scaleLinearly(temperature, -1, 1, tempMin, tempMax);
-            space.doStep();
-            doCollisions(space, temperature);
+            doStep(universe);
+            doCollisions(universe, temperature);
             // Update Most stable
         }
         successCallback(mostStable);
@@ -144,21 +144,22 @@ var doCollisions = function(space, temperature) {
     
     // MoC specific
     var doReaction = function(space, moduleA, moduleB) {  
-        var infon = flip(0.5) ? getRandomElement(moduleA) : getRandomElement(moduleB);
-        var predecessors = space.getPredecessors(infon);
+        var infonId = flip(0.5) ? getRandomElement(moduleA) : getRandomElement(moduleB);
+        var predecessors = space.getPredecessorsFromId(infonId);
         if (predecessors.length > 0) {
             var randomPredecessor = getRandomElement(predecessors);
-            space.removeEdge(infon.id, randomPredecessor.sourceId);
+            // space.removeEdge(randomPredecessor);
         }
     };
 
     var volume = space.getSize();
-    var numModules = space.getNumModules();
-    for(var i = 0; i < numModules; ++i) {
-        var moduleA = space.getModuleFromId(i);
-        for(var j = i; ++j != numMolecules; ) {
-            var moduleB = space.getModuleFromId(j);
-            var reactionProbability = computeReactionProbability(moduleA, moduleB, volume, temperature);
+    var modules = space.getModules();
+    for(var i = 0; i < modules.length; ++i) {
+        var moduleA = modules[i];
+        for(var j = i; ++j != modules.length; ) {
+            var moduleB = modules[j];
+            // var reactionProbability = computeReactionProbability(moduleA, moduleB, volume, temperature);
+            var reactionProbability = 0.01;
             var willReact = Math.random() < reactionProbability ? true : false;
             if(willReact) {
                 doReaction(space, moduleA, moduleB);
@@ -167,22 +168,26 @@ var doCollisions = function(space, temperature) {
     }
 };
 
+var enumAllInputs = function(bitString) {
+    return 5;
+}
+
 // 
 var optimiseSomething = function() {
     // List of functions in space which may form useful subcomponents
     // Analgous to the function set in genetic programming
     var basicFuncs = [{
         name : 'and',
-        inFuncs : enumAllInputs([1, 1]),
-        inLengths : [1, 1],
-        outFuncs : function(myValue, args) {
+        inputFuncs : enumAllInputs([1, 1]),
+        inputLengths : [1, 1],
+        outputFuncs : [function(myValue, args) {
             return myValue[0] === (args[1][0] && args[0][0]) ? [1] : [0];
-        },
+        }],
 
-        outLengths : [1]
+        outputLengths : [1]
     }];
     var  initialModules = [];
     var infonSizeRange = range(1, 9);
-    var numInfons = 100;
+    var numInfons = 10;
     optimiseSimulatedAnnealing(basicFuncs,  initialModules, infonSizeRange, numInfons, drawWinners);
 };

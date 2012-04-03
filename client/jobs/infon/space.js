@@ -3,53 +3,19 @@ var Space = function() {
     var edges = [];
     // Map from infon -> incoming edges
     var reverseEdges = [];
-    var modulesAreDirty = false;
-    var moduleIdToInfonIds = {};
-    var infonIdToModuleId = [];
-    var unusedModuleIds = [];
-
-    // When two infons are connected, their modules must combine
-    // When an edge is disconnected, the modules may at most double
-
     this.simulating = false;
-
-    this.getInfonsFromModuleId = function(moduleId) {
-        return moleculesToInfons[infonId];
+    
+    this.getEdges = function() {
+        return edges;
     }
 
     this.addInfon = function(infon) {
         infon.id = infons.length;
         infons.push(infon);
         edges.push([]);
-        infonIdToModuleId[infon.id] = infon.id;
-        moduleIdToInfonIds[infon.id].push([infon.id]);
+        reverseEdges.push([]);
         return infon.id;
     };
-    // Reassigns all infons in oldModule to newModule
-    var updateSet = function(newModuleId, oldModuleId) {
-        var infonsToReassign = moduleIdToInfonIds[oldModuleId];
-        for(var i = 0; i < infonsToReassign.length; ++i) {
-            infonIdToModuleId[infonsToReassign[i]] = newModuleId;
-            moduleIdToInfonIds[newModuleId].push(infonsToReassign[i]);
-        }
-        delete moduleIdToInfonIds[oldModuleId];
-        unusedModuleIds.push(oldModuleId);
-    };
-    
-    var assignInfonsToModule = function(infonIds, moduleId) {
-        for (var i=0; i<infonIds.length; ++i) {
-            infonIdToModuleId[infonIds[i]] = moduleId;
-        }
-    };
-    
-    var getNewModuleId = function() {
-        if (unusedModuleIds.length > 0) {
-            return unusedModuleIds.slice(0,0);
-        }
-        else {
-            throw "houston we have a problem with new module Ids";
-        }
-    }
 
     this.addEdge = function(targetInfon, sourceInfon, edgeType) {
         edges[targetInfon.id].push({
@@ -57,12 +23,11 @@ var Space = function() {
             sourceId : sourceInfon.id,
             edgeType : edgeType
         });
-        reverseEdges[source.id].push({
+        reverseEdges[sourceInfon.id].push({
             targetId : sourceInfon.id,
             sourceId : targetInfon.id,
             edgeType : edgeType
         });
-        updateSet(infonIdToModuleId[targetInfon], infonIdToModuleId[sourceInfon]);
     };
 
     this.addEdgeFromId = function(infonAId, infonBId, edgeType) {
@@ -81,18 +46,6 @@ var Space = function() {
             return val.sourceId === edge.targetId && val.targetId === edge.sourceId && val.edgeType === edge.edgeType;
         });
         reverseEdges.splice(index, index);
-        modulesAreDirty = true;
-
-        var moduleA = getConnectedComponents(this, infonA);
-        var moduleB = getConnectedComponents(this, infonB);
-
-        if(arraysEqual(moduleA, moduleB)) {
-            assignInfonsToModule(moduleA, getNewModuleId());
-        }
-        else {
-            assignInfonsToModule(moduleA, getNewModuleId());
-            assignInfonsToModule(moduleB, getNewModuleId());
-        }
     };
 
     this.numOutEdgesFromId = function(infonId) {
@@ -100,10 +53,10 @@ var Space = function() {
     };
 
     this.getPredecessors = function(targetInfon, edgeType) {
-        return this.getOutInfonsFromId(targetInfon.id, edgeType)
+        return this.getPredecessorsFromId(targetInfon.id, edgeType)
     };
 
-    this.getOutInfonsFromId = function(infonId, edgeType) {
+    this.getPredecessorsFromId = function(infonId, edgeType) {
         var allEdges = edges[infonId];
         return typeof edgeType === "undefined" ? allEdges : allEdges.filter(function(element, index, array) {
             return element.edgeType === edgeType;
@@ -111,7 +64,7 @@ var Space = function() {
     };
 
     this.getAdjacentInfonsFromId = function(infonId, edgeType) {
-        var allEdges = reverseEdges[infonId].concat(allEdges[infonId]);
+        var allEdges = reverseEdges[infonId].concat(edges[infonId]);
         return typeof edgeType === "undefined" ? allEdges : allEdges.filter(function(element, index, array) {
             return element.edgeType === edgeType;
         });
@@ -128,23 +81,39 @@ var Space = function() {
     this.getInfonFromId = function(infonId) {
         return infons[infonId];
     };
-    // Needs updating for multiple edge types
-    // this.appendSpace = function(space) {
-    // var idMapping = {};
-    // var numInfons = space.getNumInfons();
-    // var displacement = this.getNumInfons();
-    // for(var i = 0; i < numInfons; ++i) {
-    // var toAdd = space.getInfonFromId(i);
-    // var newInfonId = this.addInfon(toAdd);
-    // var edges = space.getOutInfonsFromId(i);
-    // this.edges[i] = edges.map(function(value) {
-    // return value + displacement;
-    // });
-    //
-    // idMapping[i] = newInfonId;
-    // }
-    // return idMapping;
-    // }
+    // Returns all connected components in the space
+    this.getModules = function() {
+        var seenModules = {};
+        var modules = [];
+        for(var i = 0; i < infons.length; ++i) {
+            if( !(i in seenModules)) {
+                var module = getConnectedComponents(this, i);
+                for(var j = 0; j < module.length; ++j) {
+                    seenModules[j] = true;
+                }
+                modules.push(module);
+            }
+        }
+        return modules;
+    };
+    // Add a new space to this one
+    this.appendSpace = function(space) {
+        var numInfons = space.getNumInfons();
+        var displacement = this.getNumInfons();
+        for(var i = 0; i < numInfons; ++i) {
+            var toAdd = space.getInfonFromId(i);
+            var newInfonId = this.addInfon(toAdd);
+            var oldedges = space.getPredecessorsFromId(i);
+            edges[i] = oldedges.map(function(value) {
+                return {
+                    sourceId : value.sourceId + displacement,
+                    targetId : value.targetId + displacement,
+                    edgeType : value.edgeType
+                };
+            });
+        }
+    };
+    
 };
 var handleApplyEdge = function(space, currentInfon, body, predecessors) {
     var toUpdate = [];
@@ -268,13 +237,15 @@ var stepUntilStable = function(space) {
 };
 var getConnectedComponents = function(space, infonId) {
     var seen = [];
-    var components = []; (function componentLoop(infonId, seen) {
+    var components = [];
+    (function componentLoop(infonId, seen) {
         seen.push(infonId);
-        var neighbours = space.getAdjacentInfonsFromId(infon.id);
+        var neighbours = space.getAdjacentInfonsFromId(infonId);
         for(var i = 0; i < neighbours.length; ++i) {
-            if(!(inArray(neighbours, neighbours[i].sourceId))) {
+            if(!(inArray(seen, neighbours[i].sourceId))) {
                 componentLoop(neighbours[i].sourceId, seen);
             }
         }
     })(infonId, seen);
+    return seen;
 };
