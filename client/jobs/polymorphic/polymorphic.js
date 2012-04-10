@@ -15,41 +15,6 @@
 * 2) on the types of applications that can happen with variables
 * e.g. we know that plus can't be applied to a string;
 */
-
-function clone(obj) {
-    // Handle the 3 simple types, and null or undefined
-    if(null == obj || "object" != typeof obj)
-        return obj;
-
-    // Handle Date
-    if( obj instanceof Date) {
-        var copy = new Date();
-        copy.setTime(obj.getTime());
-        return copy;
-    }
-
-    // Handle Array
-    if( obj instanceof Array) {
-        var copy = [];
-        for(var i = 0,              var len = obj.length; i < len; ++i) {
-            copy[i] = clone(obj[i]);
-        }
-        return copy;
-    }
-
-    // Handle Object
-    if( obj instanceof Object) {
-        var copy = {};
-        for(var attr in obj) {
-            if(obj.hasOwnProperty(attr))
-                copy[attr] = clone(obj[attr]);
-        }
-        return copy;
-    }
-
-    throw new Error("Unable to copy obj! Its type isn't supported.");
-}
-
 var PolymorphicProgram = function(primitiveFuncs) {
     var compoundFuncs = {};
 
@@ -167,11 +132,7 @@ var TypedFunction = function(name, typeSig) {
         return asString;
     }
 };
-// TODO - implement this
-var getNumArgs = function(instance) {
 
-}
-//
 var isProposalTypeConsistent = function(containerFunc, funcAppInstance, valueInstance, slot) {
     var instancesAreTypeCorrect = getInstanceType(funcAppInstance) === "funcApp" && getInstanceType(valueInstance) === "value";
     var successors = containerFunc.getSuccessors(funcAppInstance);
@@ -198,108 +159,6 @@ var isProposalTypeConsistent = function(containerFunc, funcAppInstance, valueIns
         }
     }
 }
-/**
- @brief  Instance of function application
- */
-var FuncAppInstance = function() {
-    var instanceType = "funcApp";
-    this.getName = function() {
-        return name;
-    };
-    this.setName = function(newName) {
-        name = newName;
-    }
-    this.getType = function() {
-        return instanceType;
-    }
-};
-/**
- @brief  Instance of function, value, functionApplication.
- */
-var ValueInstance = function(name, template) {
-    var instanceType = "value";
-    this.getName = function() {
-        return name;
-    };
-    this.setName = function(newName) {
-        name = newName;
-    }
-    this.getType = function() {
-        return instanceType;
-    }
-};
-/*
- @ Returns a list of instances to which instance projects
- */
-var getSuccessors = function(containerFunc, instance) {
-    // FIXME: Maybe containerFunc should not be passed and each instance
-    // Should contain a reference to its container func.
-};
-/**
- @brief  Adds an instance of template (e.g. function/value) to containerFunc
-
- @param[in] containerFunc      Function (i.e. graph), within which this
- application will occur
- @param[in] func               Template from which instance is created
- */
-var addValueInstance = function(containerFunc, template) {
-    var containerFunc = clone(containerFunc);
-    var instance = new ValueInstance(template);
-    containerFunc.addInstance(instance);
-    return containerFunc;
-};
-var addFuncAppInstance = function(containerFunc, template) {
-    var containerFunc = clone(containerFunc);
-    var instance = new FuncAppInstance(template);
-    containerFunc.addInstance(instance);
-    return containerFunc;
-};
-/**
- @brief  Applies a function to value.
-
- @param[in] containerFunc      Function (i.e. graph), within which this
- application will occur
- @param[in] func               Function to be applied
- @param[in] slot               Argument position which value will occupy
- */
-var connectInstances = function(containerFunc, funcAppInstance, funcInstance, valueInstance, slot) {
-    // TODO: Check that value is not parent of func
-    containerFunc.addEdge(funcAppInstance, valueInstnace, slot);
-};
-getInstanceType = function(instance) {
-    return instance.getType();
-};
-// Create a function and add it to function
-var makeFunction = function(program, funcName, typeSig) {
-    // Do nothing is the function name is already in use
-    var funcNameExists = program.DoesFuncNameExist(funcName);
-    if(!funcNameExists) {
-        var program = clone(program);
-        var func = new TypedFunction(funcName, typeSig);
-        program.addFunction(func);
-        return program;
-    }
-    return program;
-};
-// Get a function by name
-var getCompoundFunc = function(program, funcName) {
-    return program.getCompoundFunc(funcName);
-};
-var getPrimitiveFunc = function(program, primitiveName) {
-    return program.getPrimitiveFunc(funcName);
-};
-// Return list all functions
-var getAllCompoundFuncs = function(program) {
-    program.getAllCompoundFuncs();
-};
-// Return list all functions
-var getAllPrimitiveFuncs = function(program) {
-    program.getAllPrimitiveFuncs();
-};
-var primitiveFuncs = {
-    plus : new TypedFunction(),
-    makeFunction : new TypedFunction(),
-};
 
 var main = function() {
     // Q - How to handle scope
