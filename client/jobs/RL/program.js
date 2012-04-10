@@ -5,6 +5,9 @@
 // codeAsTree = {'functionName':['valueOfArg1PassedToFunc',..]}
 // 'valueOfArgNPassedToFunc' can be a value or a function.
 
+// If used an actual graph, would have to make sure tree structre cant be broken.
+// 
+
 var Program = function(observedData, stateQueries) {
     this.stateQueries = stateQueries;
     this.observedData = observedData;

@@ -104,7 +104,7 @@ var Space = function() {
             var toAdd = space.getInfonFromId(i);
             var newInfonId = this.addInfon(toAdd);
             var oldedges = space.getPredecessorsFromId(i);
-            edges[i] = oldedges.map(function(value) {
+            edges[newInfonId] = oldedges.map(function(value) {
                 return {
                     sourceId : value.sourceId + displacement,
                     targetId : value.targetId + displacement,
