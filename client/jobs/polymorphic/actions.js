@@ -6,38 +6,8 @@
 // TODO - implement this
 var getNumArgs = function(instance) {
 
-}
+};
 
-/**
- @brief  Instance of function application
- */
-var FuncAppInstance = function() {
-    var instanceType = "funcApp";
-    this.getName = function() {
-        return name;
-    };
-    this.setName = function(newName) {
-        name = newName;
-    }
-    this.getType = function() {
-        return instanceType;
-    }
-};
-/**
- @brief  Instance of function, value, functionApplication.
- */
-var ValueInstance = function(name, template) {
-    var instanceType = "value";
-    this.getName = function() {
-        return name;
-    };
-    this.setName = function(newName) {
-        name = newName;
-    }
-    this.getType = function() {
-        return instanceType;
-    }
-};
 /*
  @ Returns a list of instances to which instance projects
  */
@@ -58,6 +28,8 @@ var addValueInstance = function(containerFunc, template) {
     containerFunc.addInstance(instance);
     return containerFunc;
 };
+// Add new funcApp (function application) instance to containerFunc
+// typeSig: compoundFunc -> func (in primitiveFunc,compoundFunc) -> {compoundFunc, instance}
 var addFuncAppInstance = function(containerFunc, template) {
     var containerFunc = clone(containerFunc);
     var instance = new FuncAppInstance(template);
@@ -72,41 +44,61 @@ var addFuncAppInstance = function(containerFunc, template) {
  @param[in] func               Function to be applied
  @param[in] slot               Argument position which value will occupy
  */
-var connectInstances = function(containerFunc, funcAppInstance, funcInstance, valueInstance, slot) {
+var connectInstances = function(containerFunc, funcAppInstance, valueInstance, slot) {
     // TODO: Check that value is not parent of func
+    // FIXME: will cloning container funcm nake instances broken references?
+    var containerFunc = clone(containerFunc);
     containerFunc.addEdge(funcAppInstance, valueInstnace, slot);
+    return containerFunc;
 };
+
+// Apploies a function to a list of values, number of values should be sufficient and correct type
+var applyFuncToValues = function(containerFunc, funcInstances, valueInstances) {
+    // TODO: Check type consistency
+    var containerFunc = clone(containerFunc);
+    var funcAppInstance = new FuncAppInstance();
+    containerFunc = connectInstances(containerFunc, funcAppInstance, funcInstance, 0);
+    for (var i=0;i<valueInstances.length;++i) {
+        // i+1 since slot 0 is taken by function, remainder for args
+        containerFunc = connectInstances(containerFunc, funcAppInstance, valueInstances[i], i+1);
+    }
+    return containerFunc;
+}
+// either value or funcApp
 var getInstanceType = function(instance) {
     return instance.getType();
 };
-// Create a function and add it to function
+// Return list of instances
+var getAllFuncAppInstances = function(func) {
+    return func.getAllFuncAppInstances();
+};
+var getAllValueInstances = function(func) {
+    return func.getAllValueInstances();
+};
+// Create a function and return a new program with it appended
 var makeFunction = function(program, funcName, typeSig) {
     // Do nothing is the function name is already in use
     var funcNameExists = program.DoesFuncNameExist(funcName);
     if(!funcNameExists) {
         var program = clone(program);
         var func = new TypedFunction(funcName, typeSig);
-        program.addFunction(func);
+        program.addCompoundFunc(func);
         return program;
     }
     return program;
 };
-// Get a function by name
+// Get a compound/primitive functions by name
 var getCompoundFunc = function(program, funcName) {
     return program.getCompoundFunc(funcName);
 };
-var getPrimitiveFunc = function(program, primitiveName) {
+var getPrimitiveFunc = function(program, funcName) {
     return program.getPrimitiveFunc(funcName);
 };
 // Return list all functions
 var getAllCompoundFuncs = function(program) {
-    program.getAllCompoundFuncs();
+    return program.getAllCompoundFuncs();
 };
 // Return list all functions
 var getAllPrimitiveFuncs = function(program) {
-    program.getAllPrimitiveFuncs();
-};
-var primitiveFuncs = {
-    plus : new TypedFunction(),
-    makeFunction : new TypedFunction(),
+    return program.getAllPrimitiveFuncs();
 };
