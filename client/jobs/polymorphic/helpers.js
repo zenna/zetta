@@ -4,7 +4,7 @@
 */
 
 // Clones a javascript object
-var clone = function(obj) {
+var clone = function(oldObject) {
     // Handle the 3 simple types, and null or undefined
     if(null == obj || "object" != typeof obj)
         return obj;
@@ -36,6 +36,7 @@ var clone = function(obj) {
     }
 
     throw new Error("Unable to copy obj! Its type isn't supported.");
+    // return jQuery.extend(true   oldObject);
 };
 // Type variables are always all lower case
 var isTypeVariable = function(value) {

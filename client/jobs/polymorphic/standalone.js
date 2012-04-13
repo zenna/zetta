@@ -7,12 +7,10 @@
 // TODO: how to prevent lists of lists containing hetrogenous types
 // TODO: Change to use just string [(b -> b -> b) -> b -> [b] -> b]
 var primitiveFuncs = {
-    plus : new TypedFunction(),
-    makeFunction : new TypedFunction(),
-    fIf : new TypedFunction({
-        name : 'fIf',
-        type : convertTypesigListToObj(['Bool','a','a','a']),
-        asNative : function(a, b, c) {
+    fIf : new TypedFunction(
+        'fIf',
+        convertTypesigListToObj(['Bool','a','a','a']),
+        function(a, b, c) {
             if(a) {
                 return b;
             }
@@ -20,35 +18,39 @@ var primitiveFuncs = {
                 return c;
             }
         }
-    }),
-    size: new TypedFunction({
-        name : 'length',
-        type: convertTypeSigStringToObj("[a] -> Int"),
-        asNative : function(list) {
+    ),
+    length: new TypedFunction(
+        'length',
+        //"[a] -> Int"
+        convertTypesigListToObj(['List', 'Int']),
+        function(list) {
             return list.length;
         }
-    })
+    )
 };
 
 var main = function() {
     var program = new PolymorphicProgram(primitiveFuncs);
-    program = makeFunction(program, 'fold', foldTypeSig);
-    var fold = getCompoundFunc(program, 'fold'); 
-    var fIf = getPrimitiveFunc(program, 'if');
-    fold = addValueInstance(fold, fIf);
-    fold = applyFuncToValues(fold, getPrimitiveFunc(program, 'length'), addValueInstance('arg1'));
-    
-    // The problem is, these functons would be more efficient if they returned more than jsut the typedFunction or program
-    // However if they return more than one thing, need a data structure for mixed types
-    // and how to ensure program is updated
-    
+    // FIXME: using string for name, renders this function unusable for RL agentf 
+    program_fold = makeFunction(program, 'fold', foldTypeSig);
+    var length = getPrimitiveFunc(program, 'length');
+    var fIf = getPrimitiveFunc(program_fold[0], 'fIf');
+    var arg0 = getLocalValue(program_fold[1], 0);
+    var fold_fIf = addValueInstance(program_fold[1], fIf);
+    var fold_length = addValueInstance(fold_fIf[0], length);
+
+    // Problem, is length still valid in fold after fold is modified?
+
+    // Problem is that fold_if we have to do every operation one by one, since otherwise program will be wring
+    // Are there any times when you might want the programs to be different, e.g. to compare hypothetical change
+    fold_arg = addValueInstance(fold_fIf[0], arg0);
+    fold_funcApp = applyFuncToValues(fold_arg[0], getPrimitiveFunc(program, 'length'), [fold_arg[1]]);
+        
     // Drawing
-    var plainGraph = funcToPlainGraph(fold);
+    var plainGraph = funcToPlainGraph(fold_funcApp[0]);
     var canvas = new drawPlainGraph(plainGraph,'#candidates',300,300);
     canvas.forceInit();
     canvas.drawInit();
-    // applyFuncToValues(fold, fapp, fIf, value, 0);
-    // applyFuncToValues(fold, fapp, fIf, value, 1);
 }
 var foldArg1 = {
     type : 'function',

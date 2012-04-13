@@ -24,6 +24,7 @@ var PolymorphicProgram = function(primitiveFuncs) {
 
     this.addCompoundFunc = function(func) {
         compoundFuncs[func.getName()] = func;
+        return func;
     };
 
     this.getCompoundFunc = function(funcName) {
@@ -56,7 +57,7 @@ var PolymorphicProgram = function(primitiveFuncs) {
     }
 }
 // Typed function represented as graph
-var TypedFunction = function(name, typeSig) {
+var TypedFunction = function(name, typeSig, asNative) {
     var instances = [];
     // Nodes, funcApps, values, functions
     var edges = [];
@@ -64,17 +65,24 @@ var TypedFunction = function(name, typeSig) {
     // Function as a string of Javascript code
     var asStringIsDirty = true;
     // True whenever graph is updated, and string not
-    var asNative;
+    if (typeof asNative !== "undefined") {
+        var asNative = asNative;
+    };
     // Function compiled into executable native code
 
     this.getName = function() {
         return name;
-    }
+    };
+
+    this.getTypeSig = function() {
+        return typeSig;
+    };
 
     this.addInstance = function(instance) {
         instance.setName(edges.length);
         instances.push(instance);
         edges.push([]);
+        return instance;
     };
     // Adds an edge between a funcApp instance and a value (after some sanity
     // checking)
@@ -82,17 +90,17 @@ var TypedFunction = function(name, typeSig) {
         // Check that slot is valid and empty
         var successors = this.getSuccessors(funcAppInstance);
         var slotIsAvailable = successors[slot] === undefined ? true : false;
-        var proposalIsTypeConsistent = isProposalTypeConsistent(funcAppInstance, valueInstance, slot);
+        var proposalIsTypeConsistent = isProposalTypeConsistent(this, funcAppInstance, valueInstance, slot);
         if(instancesAreTypeCorrect && proposalIsTypeConsistent) {
             // Slot 0 is for a function only
         }
     };
     this.getAllFuncAppInstances = function() {
-        return instances.filter(function(instance) {instance.getType() === "funcApp";
+        return instances.filter(function(instance) {return instance.getType() === "funcApp" ? true : false;
         });
     }
     this.getAllValueInstances = function() {
-        return instances.filter(function(instance) {instance.getType() === "value";
+        return instances.filter(function(instance) {return instance.getType() === "value" ? true : false;
         });
     }
     // This function should not be accessed by non helper functions since it returns a list
@@ -211,3 +219,18 @@ var isProposalTypeConsistent = function(containerFunc, funcAppInstance, valueIns
         }
     }
 };
+
+objf = function() {
+    var data = {list:[1],dic:{a:'3'}};
+    this.magick = function() {
+        data.list.push(3);
+        data.dic['e'] = 10;
+    }
+    this.getData = function() {
+        return data;
+    }
+}
+
+old = new objf;
+newo = clone(old);
+newo.magick();

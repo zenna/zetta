@@ -25,16 +25,16 @@ var getSuccessors = function(containerFunc, instance) {
 var addValueInstance = function(containerFunc, template) {
     var containerFunc = clone(containerFunc);
     var instance = new ValueInstance(template);
-    containerFunc.addInstance(instance);
-    return containerFunc;
+    instance = containerFunc.addInstance(instance);
+    return [containerFunc, instance];
 };
 // Add new funcApp (function application) instance to containerFunc
 // typeSig: compoundFunc -> func (in primitiveFunc,compoundFunc) -> {compoundFunc, instance}
 var addFuncAppInstance = function(containerFunc, template) {
     var containerFunc = clone(containerFunc);
     var instance = new FuncAppInstance(template);
-    containerFunc.addInstance(instance);
-    return containerFunc;
+    instance = containerFunc.addInstance(instance);
+    return [containerFunc, instance];
 };
 /**
  @brief  Applies a function to value.
@@ -48,21 +48,22 @@ var connectInstances = function(containerFunc, funcAppInstance, valueInstance, s
     // TODO: Check that value is not parent of func
     // FIXME: will cloning container funcm nake instances broken references?
     var containerFunc = clone(containerFunc);
-    containerFunc.addEdge(funcAppInstance, valueInstnace, slot);
+    containerFunc.addEdge(funcAppInstance, valueInstance, slot);
     return containerFunc;
 };
 
 // Apploies a function to a list of values, number of values should be sufficient and correct type
-var applyFuncToValues = function(containerFunc, funcInstances, valueInstances) {
+var applyFuncToValues = function(containerFunc, funcInstance, valueInstances) {
     // TODO: Check type consistency
     var containerFunc = clone(containerFunc);
     var funcAppInstance = new FuncAppInstance();
+    containerFunc.addInstance(funcAppInstance);
     containerFunc = connectInstances(containerFunc, funcAppInstance, funcInstance, 0);
     for (var i=0;i<valueInstances.length;++i) {
         // i+1 since slot 0 is taken by function, remainder for args
         containerFunc = connectInstances(containerFunc, funcAppInstance, valueInstances[i], i+1);
     }
-    return containerFunc;
+    return [containerFunc, funcAppInstance];
 }
 // either value or funcApp
 var getInstanceType = function(instance) {
@@ -76,16 +77,17 @@ var getAllValueInstances = function(func) {
     return func.getAllValueInstances();
 };
 // Create a function and return a new program with it appended
+// Typesig: (program -> funcName -> typeSig) -> {program, compoundFunc}
 var makeFunction = function(program, funcName, typeSig) {
     // Do nothing is the function name is already in use
     var funcNameExists = program.DoesFuncNameExist(funcName);
     if(!funcNameExists) {
-        var program = clone(program);
+        var program2 = clone(program);
         var func = new TypedFunction(funcName, typeSig);
-        program.addCompoundFunc(func);
-        return program;
+        func = program2.addCompoundFunc(func);
+        return [program2, func];
     }
-    return program;
+    throw "Tried to create existing function name";
 };
 // Get a compound/primitive functions by name
 var getCompoundFunc = function(program, funcName) {
@@ -102,3 +104,9 @@ var getAllCompoundFuncs = function(program) {
 var getAllPrimitiveFuncs = function(program) {
     return program.getAllPrimitiveFuncs();
 };
+
+var getLocalValue = function(func, slot) {
+    //TODO: check func is a func and slot is within range
+    var typeSig = func.getTypeSig();
+    return typeSig.args[slot];
+}

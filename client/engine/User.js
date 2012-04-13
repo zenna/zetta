@@ -1,5 +1,5 @@
 /**
- * @author Zenna Tavares
+ * @author Zenna Tavares3
  */
 
 var User = function(parentHostname) {
