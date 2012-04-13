@@ -18,55 +18,69 @@
 *     // Q - How to handle scope
 // Q - How to handle real numbers
 // Q - How to handle
+
+// Statefulness vs stateless functions
+For stateless pure functions
+ - pros: we need state free objects if we want to do something like sparse samplinge
+ - cons: possibility for disconnect between programs, functions, and instances
+    - for example 
+stateful (i.e. actions can modify state of program)
+ - more efficient in time and space
+ - javacript objects are difficult to copy
+
 */
 var PolymorphicProgram = function(primitiveFuncs) {
-    var compoundFuncs = {};
+    this.compoundFuncs = {};
+    this.primitiveFuncs = primitiveFuncs;
 
     this.addCompoundFunc = function(func) {
-        compoundFuncs[func.getName()] = func;
+        this.compoundFuncs[func.getName()] = func;
         return func;
     };
 
     this.getCompoundFunc = function(funcName) {
-        return compoundFuncs[funcName];
+        return this.compoundFuncs[funcName];
     };
     // Return all compound funcs as a list of
     // TODO: use dirty/memoisation to make this faster
     this.getAllCompoundFuncs = function() {
         var compoundFuncsAsList = [];
-        for(var funcName in compoundFuncs) {
-            compoundFuncsAsList.push(compoundFuncs[funcName])
+        for(var funcName in this.compoundFuncs) {
+            compoundFuncsAsList.push(this.compoundFuncs[funcName])
         }
         return compoundFuncsAsList;
     };
 
     this.getAllPrimitiveFuncs = function() {
         var primitiveFuncsAsList = [];
-        for(var funcName in primitiveFuncs) {
-            primitiveFuncsAsList.push(primitiveFuncs[funcName])
+        for(var funcName in this.primitiveFuncs) {
+            primitiveFuncsAsList.push(this.primitiveFuncs[funcName])
         }
         return primitiveFuncsAsList;
     }
 
     this.DoesFuncNameExist = function(funcName) {
-        return ( funcName in compoundFuncs);
+        return ( funcName in this.compoundFuncs);
     }
 
     this.getPrimitiveFunc = function(funcName) {
-        return primitiveFuncs[funcName];
+        return this.primitiveFuncs[funcName];
     }
 }
 // Typed function represented as graph
 var TypedFunction = function(name, typeSig, asNative) {
-    var instances = [];
+    this.name = name;
+    this.typeSig = typeSig;
+    this.asNative = asNative;
+    this.instances = [];
     // Nodes, funcApps, values, functions
-    var edges = [];
-    var asString = "";
+    this.edges = [];
+    this.asString = "";
     // Function as a string of Javascript code
-    var asStringIsDirty = true;
+    this.asStringIsDirty = true;
     // True whenever graph is updated, and string not
     if (typeof asNative !== "undefined") {
-        var asNative = asNative;
+        this.asNative = asNative;
     };
     // Function compiled into executable native code
 
@@ -79,9 +93,9 @@ var TypedFunction = function(name, typeSig, asNative) {
     };
 
     this.addInstance = function(instance) {
-        instance.setName(edges.length);
-        instances.push(instance);
-        edges.push([]);
+        instance.setName(this.instances.length);
+        this.instances.push(instance);
+        this.edges.push([]);
         return instance;
     };
     // Adds an edge between a funcApp instance and a value (after some sanity
@@ -91,108 +105,124 @@ var TypedFunction = function(name, typeSig, asNative) {
         var successors = this.getSuccessors(funcAppInstance);
         var slotIsAvailable = successors[slot] === undefined ? true : false;
         var proposalIsTypeConsistent = isProposalTypeConsistent(this, funcAppInstance, valueInstance, slot);
-        if(instancesAreTypeCorrect && proposalIsTypeConsistent) {
-            // Slot 0 is for a function only
+        if(proposalIsTypeConsistent) {
+            this.edges[funcAppInstance.getName()][slot] = valueInstance;
         }
     };
     this.getAllFuncAppInstances = function() {
-        return instances.filter(function(instance) {return instance.getType() === "funcApp" ? true : false;
+        return this.instances.filter(function(instance) {return instance.getType() === "funcApp" ? true : false;
         });
     }
     this.getAllValueInstances = function() {
-        return instances.filter(function(instance) {return instance.getType() === "value" ? true : false;
+        return this.instances.filter(function(instance) {return instance.getType() === "value" ? true : false;
         });
+    }
+    this.getInstanceByName = function(name) {
+        return this.instances[name];
     }
     // This function should not be accessed by non helper functions since it returns a list
     // of mixed types (funcAppInstances and valueInstances), we use it only for efficient drawing
     this.getAllInstances = function() {
-        return instances;
+        return this.instances;
     }
     // Return a list of instances which are successors (i.e. connected to)
     // given instance
     this.getSuccessors = function(instance) {
         // Name should be integer index ndex
         var name = instance.getName();
-        if( typeof name !== "number" || edges.length <= name) {
+        if( typeof name !== "number" || this.edges.length <= name) {
             throw "invalid instance name";
         }
-        return edges[name];
+        return this.edges[name];
     };
     // Compile the function
     this.compileToNative = function() {
-        asNative = new Function("primitiveFuncs", "compoundFuncs", codeAsString);
+        this.asNative = new Function("primitiveFuncs", "compoundFuncs", this.asString);
     }
     // Compile the graph into a Javascript string
     this.compileToString = function() {
-        asString = "return " + (function loop(instance) {
+        var self = this;
+        this.asString = "return " + (function loop(instance) {
             var funcAsString = "";
             if(instance.getType() === "funcApp") {
-                var successors = this.getSuccessors(instance);
+                var successors = self.getSuccessors(instance);
                 // TODO: Check funcApp is type correct and complete;
 
                 // Get function (in 0th pos) name as string e.g 'myFunc('
                 funcAsString += loop(successors[0]) + "(";
 
                 // Now get recursively arguments
-                for(var i = 0; i < successors.length; ++i) {
-                    functionAsString += loop(successors[i]);
+                for(var i = 1; i < successors.length; ++i) {
+                    funcAsString += loop(successors[i]);
                     if(i != successors.length - 1) {
-                        functionAsString += ",";
+                        funcAsString += ",";
                     }
                 }
-                functionAsString += ")";
-                return functionAsString;
+                funcAsString += ")";
+                return funcAsString;
             }
             else if(instance.getType() === "value") {
                 // TODO: preped primitiveFuncs, compoundFuncs,
-                return funcInstance.getTemplateName();
+                return instance.getTemplateName();
             }
 
             else {
                 throw "invalid instance type in compilation:" + instance.getType();
             }
 
-        })(instances[0]);
+        })(this.instances[0]);
         //0th instance is root funcApp
-        return asString;
+        return this.asString;
     }
     // First funcApp is root of tree, and accepts fuction only of same type as
     // function
-    this.addInstance(new FuncAppInstance(typeSig));
+    var rootInstance = new FuncAppInstance()
+    this.addInstance(rootInstance);
 };
 /**
  @brief  Instance of function application
  */
-var FuncAppInstance = function() {
-    var name;
-    var instanceType = "funcApp";
+var FuncAppInstance = function(template) {
+    this.template = template;
+    this.instanceType = "funcApp";
     this.getName = function() {
-        return name;
+        return this.name;
     };
     this.setName = function(newName) {
-        name = newName;
+        this.name = newName;
     }
     this.getType = function() {
-        return instanceType;
+        return this.instanceType;
+    };
+    this.getTemplate = function() {
+        return this.template;
+    }
+    this.getTemplateName = function() {
+        return this.instanceType;
     }
 };
 /**
  @brief  Instance of function, value, functionApplication.
  */
-var ValueInstance = function(name, template) {
-    var name;
-    var instanceType = "value";
+var ValueInstance = function(template) {
+    this.template = template;
+    this.instanceType = "value";
     this.getName = function() {
-        return name;
+        return this.name;
     };
     this.setName = function(newName) {
-        name = newName;
+        this.name = newName;
     }
     this.getType = function() {
-        return instanceType;
+        return this.instanceType;
+    }
+    this.getTemplateName = function() {
+        return this.template.getName();
     }
 };
 var isProposalTypeConsistent = function(containerFunc, funcAppInstance, valueInstance, slot) {
+    // FIXME: hack
+    return true;
     var instancesAreTypeCorrect = getInstanceType(funcAppInstance) === "funcApp" && getInstanceType(valueInstance) === "value";
     var successors = containerFunc.getSuccessors(funcAppInstance);
     var slotIsAvailable = successors[slot] === undefined ? true : false;
@@ -219,18 +249,3 @@ var isProposalTypeConsistent = function(containerFunc, funcAppInstance, valueIns
         }
     }
 };
-
-objf = function() {
-    var data = {list:[1],dic:{a:'3'}};
-    this.magick = function() {
-        data.list.push(3);
-        data.dic['e'] = 10;
-    }
-    this.getData = function() {
-        return data;
-    }
-}
-
-old = new objf;
-newo = clone(old);
-newo.magick();

@@ -177,11 +177,11 @@ var drawPlainGraph = function(graph, parent, w, h) {
         // A copy of the text with a thick white stroke for legibility.
 
         text.append("svg:text").attr("x", 8).attr("y", ".31em").attr("class", "shadow").text(function(d) {
-            return "";
+            return d.text;
         });
 
         text.append("svg:text").attr("x", 8).attr("y", ".31em").text(function(d) {
-            return "";
+            return d.text;
         });
 
         force.on("tick", tick);

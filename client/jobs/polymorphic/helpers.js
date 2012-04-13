@@ -4,7 +4,7 @@
 */
 
 // Clones a javascript object
-var clone = function(oldObject) {
+var clone = function(obj) {
     // Handle the 3 simple types, and null or undefined
     if(null == obj || "object" != typeof obj)
         return obj;
@@ -36,7 +36,7 @@ var clone = function(oldObject) {
     }
 
     throw new Error("Unable to copy obj! Its type isn't supported.");
-    // return jQuery.extend(true   oldObject);
+    // return jQuery.extend(true   obj);
 };
 // Type variables are always all lower case
 var isTypeVariable = function(value) {
@@ -84,8 +84,11 @@ var funcToPlainGraph = function(typedFunc) {
 
     // First add all the nodes
     for(var i = 0; i < instances.length; ++i) {
+        var name = instances[i].getName();
+        var templateName = instances[i].getTemplateName();
         nodes.push({
             id : instances[i].getName(),
+            text : name + templateName
         });
     }
 

@@ -65,6 +65,16 @@ var applyFuncToValues = function(containerFunc, funcInstance, valueInstances) {
     }
     return [containerFunc, funcAppInstance];
 }
+var applyFuncToValuesWithFuncApp = function(containerFunc, funcAppInstance, funcInstance, valueInstances) {
+    // TODO: Check type consistency
+    var containerFunc = clone(containerFunc);
+    containerFunc = connectInstances(containerFunc, funcAppInstance, funcInstance, 0);
+    for (var i=0;i<valueInstances.length;++i) {
+        // i+1 since slot 0 is taken by function, remainder for args
+        containerFunc = connectInstances(containerFunc, funcAppInstance, valueInstances[i], i+1);
+    }
+    return [containerFunc, funcAppInstance];
+}
 // either value or funcApp
 var getInstanceType = function(instance) {
     return instance.getType();
@@ -108,5 +118,5 @@ var getAllPrimitiveFuncs = function(program) {
 var getLocalValue = function(func, slot) {
     //TODO: check func is a func and slot is within range
     var typeSig = func.getTypeSig();
-    return typeSig.args[slot];
+    return new TypedFunction('arg'+slot, typeSig.args[slot]);
 }
